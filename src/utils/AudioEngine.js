@@ -2,7 +2,12 @@ import * as Tone from 'tone';
 
 class AudioEngine {
     constructor() {
-        this.instruments = {};
+        this.instruments = {
+            pianoSampler: null,
+            guitarSampler: null,
+            synthPiano: null,
+            synthGuitar: null
+        };
         this.currentInstrument = 'piano'; // 'piano' | 'guitar'
         this.initialized = false;
     }
@@ -33,7 +38,15 @@ class AudioEngine {
         this.instruments.synthGuitar.volume.value = -5;
 
         // --- SAMPLERS ---
+        // Lazy load the default instrument (piano)
+        this._loadPianoSampler();
 
+        this.initialized = true;
+    }
+
+    _loadPianoSampler() {
+        if (this.instruments.pianoSampler) return;
+        console.log("Initializing Piano Sampler...");
         // Piano Sampler (Salamander Grand)
         this.instruments.pianoSampler = new Tone.Sampler({
             urls: {
@@ -71,7 +84,11 @@ class AudioEngine {
             release: 1,
             baseUrl: "https://tonejs.github.io/audio/salamander/",
         }).toDestination();
+    }
 
+    _loadGuitarSampler() {
+        if (this.instruments.guitarSampler) return;
+        console.log("Initializing Guitar Sampler...");
         // Guitar Sampler (Acoustic Guitar)
         // Note: Using a public repo for guitar samples. If this fails, we fall back to PluckSynth.
         // Source: https://github.com/nbrosowsky/tonejs-instruments
@@ -97,26 +114,29 @@ class AudioEngine {
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/acoustic_guitar_nylon/",
             onload: () => console.log("Guitar Sampler Loaded"),
         }).toDestination();
-
-        this.initialized = true;
     }
 
     setInstrument(type) {
         // type: 'piano' | 'guitar'
         this.currentInstrument = type;
+        if (type === 'piano') {
+            this._loadPianoSampler();
+        } else if (type === 'guitar') {
+            this._loadGuitarSampler();
+        }
     }
 
     playNote(note) {
         if (!this.initialized) return;
 
         if (this.currentInstrument === 'piano') {
-            if (this.instruments.pianoSampler.loaded) {
+            if (this.instruments.pianoSampler && this.instruments.pianoSampler.loaded) {
                 this.instruments.pianoSampler.triggerAttackRelease(note, "8n");
             } else {
                 this.instruments.synthPiano.triggerAttackRelease(note, "8n");
             }
         } else if (this.currentInstrument === 'guitar') {
-            if (this.instruments.guitarSampler.loaded) {
+            if (this.instruments.guitarSampler && this.instruments.guitarSampler.loaded) {
                 this.instruments.guitarSampler.triggerAttackRelease(note, "8n");
             } else {
                 this.instruments.synthGuitar.triggerAttackRelease(note, "8n");
