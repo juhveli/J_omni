@@ -25,7 +25,7 @@ class AudioEngine {
         this.instruments.synthGuitar = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "sawtooth" },
             envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 1 }
-        }).toDestination();
+        });
 
         // Add a filter to make it warmer (like a guitar body)
         const filter = new Tone.Filter(2000, "lowpass").toDestination();
