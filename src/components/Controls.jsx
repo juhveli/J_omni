@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
   return (
     <div className="controls-container">
       <div className="control-group">
@@ -18,26 +18,76 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale }) 
           >
             🎸 Guitar
           </button>
+          <button
+            className={`control-btn ${currentInstrument === 'clarinet' ? 'active' : ''}`}
+            onClick={() => setInstrument('clarinet')}
+          >
+            🎷 Clarinet
+          </button>
+          <button
+            className={`control-btn ${currentInstrument === 'oboe' ? 'active' : ''}`}
+            onClick={() => setInstrument('oboe')}
+          >
+            🐍 Oboe
+          </button>
+          <button
+            className={`control-btn ${currentInstrument === 'doubleBass' ? 'active' : ''}`}
+            onClick={() => setInstrument('doubleBass')}
+          >
+            🎻 Bass
+          </button>
+          <button
+            className={`control-btn ${currentInstrument === 'electricGuitar' ? 'active' : ''}`}
+            onClick={() => setInstrument('electricGuitar')}
+          >
+            🎸⚡ E. Guitar
+          </button>
+          <button
+            className={`control-btn ${currentInstrument === 'drums' ? 'active' : ''}`}
+            onClick={() => setInstrument('drums')}
+          >
+            🥁 Drums
+          </button>
         </div>
       </div>
 
       <div className="control-group">
-        <h3>Scale</h3>
+        <h3>Sound Mode</h3>
         <div className="toggle-group">
           <button
-            className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
-            onClick={() => setScale('simple')}
+            className={`control-btn ${soundType === 'sampled' ? 'active' : ''}`}
+            onClick={() => setSoundType('sampled')}
           >
-            Simple (C Major)
+            🎧 Real
           </button>
           <button
-            className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
-            onClick={() => setScale('full')}
+            className={`control-btn ${soundType === 'synthesized' ? 'active' : ''}`}
+            onClick={() => setSoundType('synthesized')}
           >
-            Full (Chromatic)
+            🤖 Computer
           </button>
         </div>
       </div>
+
+      {currentInstrument !== 'drums' && (
+        <div className="control-group">
+          <h3>Scale</h3>
+          <div className="toggle-group">
+            <button
+              className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
+              onClick={() => setScale('simple')}
+            >
+              Simple (C Major)
+            </button>
+            <button
+              className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
+              onClick={() => setScale('full')}
+            >
+              Full (Chromatic)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

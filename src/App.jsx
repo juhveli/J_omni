@@ -7,6 +7,7 @@ import AudioEngine from './utils/AudioEngine'
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
+  const [soundType, setSoundType] = useState('sampled')
   const [isAudioStarted, setIsAudioStarted] = useState(false)
 
   const handleStart = async () => {
@@ -17,6 +18,11 @@ function App() {
   const handleInstrumentChange = (inst) => {
     setCurrentInstrument(inst)
     AudioEngine.setInstrument(inst)
+  }
+
+  const handleSoundTypeChange = (type) => {
+    setSoundType(type)
+    AudioEngine.setSoundType(type)
   }
 
   return (
@@ -38,8 +44,13 @@ function App() {
              setInstrument={handleInstrumentChange}
              currentScale={currentScale}
              setScale={setCurrentScale}
+             soundType={soundType}
+             setSoundType={handleSoundTypeChange}
            />
-           <InstrumentPad currentScale={currentScale} />
+           <InstrumentPad
+             currentScale={currentScale}
+             currentInstrument={currentInstrument}
+           />
         </div>
       )}
     </div>

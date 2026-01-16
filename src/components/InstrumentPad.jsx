@@ -42,15 +42,28 @@ const SCALES = {
   ]
 };
 
-const InstrumentPad = ({ currentScale }) => {
-  const notes = SCALES[currentScale] || SCALES.simple;
+const DRUMS = [
+    { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
+    { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
+    { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
+    { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
+    { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
+];
+
+const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  let notes;
+  if (currentInstrument === 'drums') {
+      notes = DRUMS;
+  } else {
+      notes = SCALES[currentScale] || SCALES.simple;
+  }
 
   const handlePlay = (note) => {
     AudioEngine.playNote(note);
   };
 
   return (
-    <div className={`instrument-pad ${currentScale}`}>
+    <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
       {notes.map((n) => (
         <NoteButton
           key={n.note}
