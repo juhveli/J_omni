@@ -9,12 +9,14 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale }) 
           <button
             className={`control-btn ${currentInstrument === 'piano' ? 'active' : ''}`}
             onClick={() => setInstrument('piano')}
+            aria-pressed={currentInstrument === 'piano'}
           >
             🎹 Piano
           </button>
           <button
             className={`control-btn ${currentInstrument === 'guitar' ? 'active' : ''}`}
             onClick={() => setInstrument('guitar')}
+            aria-pressed={currentInstrument === 'guitar'}
           >
             🎸 Guitar
           </button>
@@ -27,12 +29,14 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale }) 
           <button
             className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
             onClick={() => setScale('simple')}
+            aria-pressed={currentScale === 'simple'}
           >
             Simple (C Major)
           </button>
           <button
             className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
             onClick={() => setScale('full')}
+            aria-pressed={currentScale === 'full'}
           >
             Full (Chromatic)
           </button>
