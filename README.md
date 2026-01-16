@@ -1,16 +1,47 @@
-# React + Vite
+# 🦄 Unicorn Music 🎵
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Unicorn Music** is a fun test project designed for children (approx. 6 years old). It features a colorful, high-contrast "Unicorn Dark Mode" interface with large, easy-to-tap buttons, making musical exploration accessible and engaging.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **🎹 Instruments:**
+    *   **Piano:** Plays classic piano sounds.
+    *   **Guitar:** Plays acoustic guitar sounds.
+    *   *Powered by [Tone.js](https://tonejs.github.io/), using high-quality samples with synthesized fallbacks.*
+*   **🌈 Scales:**
+    *   **Simple (C Major):** Perfect for beginners, using only the "white keys" (C, D, E, F, G, A, B).
+    *   **Full (Chromatic):** Includes sharps/flats (black keys) for more complex melodies.
+*   **🎨 Interface:**
+    *   Large, touch-friendly buttons.
+    *   Rainbow color coding for notes.
+    *   Deep purple "Unicorn Dark Mode" background.
 
-## React Compiler
+## 🚀 Installation & Usage
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
+*   Node.js installed on your machine.
 
-## Expanding the ESLint configuration
+### Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Start the development server:**
+    ```bash
+    npm run dev
+    ```
+    Open your browser to the URL shown (usually `http://localhost:5173`).
+
+3.  **Build for production:**
+    ```bash
+    npm run build
+    ```
+
+## 🔮 Future Roadmap
+
+*   **ComfyUI Integration:** Future updates plan to integrate [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for enhanced creative capabilities.
+
+---
+*Created as a fun test project.*
