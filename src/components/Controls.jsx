@@ -23,30 +23,35 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
           <button
             className={`control-btn ${currentInstrument === 'clarinet' ? 'active' : ''}`}
             onClick={() => setInstrument('clarinet')}
+            aria-pressed={currentInstrument === 'clarinet'}
           >
             🎷 Clarinet
           </button>
           <button
             className={`control-btn ${currentInstrument === 'oboe' ? 'active' : ''}`}
             onClick={() => setInstrument('oboe')}
+            aria-pressed={currentInstrument === 'oboe'}
           >
             🐍 Oboe
           </button>
           <button
             className={`control-btn ${currentInstrument === 'doubleBass' ? 'active' : ''}`}
             onClick={() => setInstrument('doubleBass')}
+            aria-pressed={currentInstrument === 'doubleBass'}
           >
             🎻 Bass
           </button>
           <button
             className={`control-btn ${currentInstrument === 'electricGuitar' ? 'active' : ''}`}
             onClick={() => setInstrument('electricGuitar')}
+            aria-pressed={currentInstrument === 'electricGuitar'}
           >
             🎸⚡ E. Guitar
           </button>
           <button
             className={`control-btn ${currentInstrument === 'drums' ? 'active' : ''}`}
             onClick={() => setInstrument('drums')}
+            aria-pressed={currentInstrument === 'drums'}
           >
             🥁 Drums
           </button>
@@ -57,16 +62,16 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
         <h3>Sound Mode</h3>
         <div className="toggle-group">
           <button
-            className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
-            onClick={() => setScale('simple')}
-            aria-pressed={currentScale === 'simple'}
+            className={`control-btn ${soundType === 'sampled' ? 'active' : ''}`}
+            onClick={() => setSoundType('sampled')}
+            aria-pressed={soundType === 'sampled'}
           >
             🎧 Real
           </button>
           <button
-            className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
-            onClick={() => setScale('full')}
-            aria-pressed={currentScale === 'full'}
+            className={`control-btn ${soundType === 'synthesized' ? 'active' : ''}`}
+            onClick={() => setSoundType('synthesized')}
+            aria-pressed={soundType === 'synthesized'}
           >
             🤖 Computer
           </button>
@@ -80,12 +85,14 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <button
               className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
               onClick={() => setScale('simple')}
+              aria-pressed={currentScale === 'simple'}
             >
               Simple (C Major)
             </button>
             <button
               className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
               onClick={() => setScale('full')}
+              aria-pressed={currentScale === 'full'}
             >
               Full (Chromatic)
             </button>
