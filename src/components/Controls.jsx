@@ -9,12 +9,14 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
           <button
             className={`control-btn ${currentInstrument === 'piano' ? 'active' : ''}`}
             onClick={() => setInstrument('piano')}
+            aria-pressed={currentInstrument === 'piano'}
           >
             🎹 Piano
           </button>
           <button
             className={`control-btn ${currentInstrument === 'guitar' ? 'active' : ''}`}
             onClick={() => setInstrument('guitar')}
+            aria-pressed={currentInstrument === 'guitar'}
           >
             🎸 Guitar
           </button>
@@ -55,14 +57,16 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
         <h3>Sound Mode</h3>
         <div className="toggle-group">
           <button
-            className={`control-btn ${soundType === 'sampled' ? 'active' : ''}`}
-            onClick={() => setSoundType('sampled')}
+            className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
+            onClick={() => setScale('simple')}
+            aria-pressed={currentScale === 'simple'}
           >
             🎧 Real
           </button>
           <button
-            className={`control-btn ${soundType === 'synthesized' ? 'active' : ''}`}
-            onClick={() => setSoundType('synthesized')}
+            className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
+            onClick={() => setScale('full')}
+            aria-pressed={currentScale === 'full'}
           >
             🤖 Computer
           </button>
