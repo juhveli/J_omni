@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -51,6 +51,8 @@ const DRUMS = [
 ];
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  const [activeNote, setActiveNote] = useState(null);
+
   let notes;
   if (currentInstrument === 'drums') {
       notes = DRUMS;
@@ -62,6 +64,60 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     AudioEngine.playNote(note);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.repeat) return;
+
+      const key = e.key.toLowerCase();
+      let index = -1;
+
+      // Map keys to note indices
+      // Simple/Drums: A, S, D, F...
+      // Full: Specific mapping to mimic piano
+
+      if (currentInstrument === 'drums' || currentScale === 'simple') {
+          const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+          index = keys.indexOf(key);
+      } else if (currentScale === 'full') {
+          // Mapping for full scale (chromatic)
+          const keyMap = {
+              'a': 0, // C
+              'w': 1, // C#
+              's': 2, // D
+              'e': 3, // D#
+              'd': 4, // E
+              'f': 5, // F
+              't': 6, // F#
+              'g': 7, // G
+              'y': 8, // G#
+              'h': 9, // A
+              'u': 10, // A#
+              'j': 11, // B
+              'k': 12  // C5
+          };
+          index = keyMap[key] !== undefined ? keyMap[key] : -1;
+      }
+
+      if (index >= 0 && index < notes.length) {
+          const note = notes[index].note;
+          setActiveNote(note);
+          handlePlay(note);
+      }
+    };
+
+    const handleKeyUp = () => {
+        setActiveNote(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [notes, currentInstrument, currentScale]);
+
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
       {notes.map((n) => (
@@ -71,6 +127,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           color={n.color}
           label={n.label}
           onPlay={handlePlay}
+          forceActive={activeNote === n.note}
         />
       ))}
     </div>

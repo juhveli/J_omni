@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
@@ -9,6 +9,12 @@ function App() {
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')
   const [isAudioStarted, setIsAudioStarted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribe(setIsLoading);
+    return unsubscribe;
+  }, []);
 
   const handleStart = async () => {
     await AudioEngine.initialize()
@@ -38,6 +44,7 @@ function App() {
         <div className="main-interface">
            <header>
              <h1>🦄 Unicorn Music 🎵</h1>
+             {isLoading && <div className="loading-indicator">⏳ Loading Sounds...</div>}
            </header>
            <Controls
              currentInstrument={currentInstrument}

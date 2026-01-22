@@ -2,6 +2,9 @@ import * as Tone from 'tone';
 
 class AudioEngine {
     constructor() {
+        this.isLoading = false;
+        this.listeners = [];
+
         this.instruments = {
             // Samplers
             pianoSampler: null,
@@ -116,13 +119,38 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    subscribe(callback) {
+        this.listeners.push(callback);
+        callback(this.isLoading);
+        return () => {
+            this.listeners = this.listeners.filter(cb => cb !== callback);
+        };
+    }
+
+    _setLoading(loading) {
+        if (this.isLoading === loading) return;
+        this.isLoading = loading;
+        this.listeners.forEach(cb => cb(this.isLoading));
+    }
+
     setSoundType(type) {
         this.soundType = type;
         console.log(`Sound Type set to: ${type}`);
+        if (type === 'sampled') {
+            this.setInstrument(this.currentInstrument);
+        } else {
+            this._setLoading(false);
+        }
     }
 
     setInstrument(type) {
         this.currentInstrument = type;
+
+        if (this.soundType !== 'sampled' || type === 'drums') {
+            this._setLoading(false);
+            return;
+        }
+
         switch (type) {
             case 'piano': this._loadPianoSampler(); break;
             case 'guitar': this._loadGuitarSampler(); break;
@@ -130,62 +158,84 @@ class AudioEngine {
             case 'doubleBass': this._loadDoubleBassSampler(); break;
             case 'oboe': this._loadOboeSampler(); break;
             case 'electricGuitar': this._loadElectricGuitarSampler(); break;
-            case 'drums': break; // No sampler for drums yet, strictly synth
+            default: this._setLoading(false);
         }
     }
 
     // --- Sampler Loaders ---
 
+    _handleSamplerLoad(instrumentKey, samplerFactory) {
+        const sampler = this.instruments[instrumentKey];
+        if (sampler) {
+            // If already exists, check if loaded. Tone.Sampler.loaded is the flag.
+            if (!sampler.loaded) {
+                this._setLoading(true);
+            } else {
+                this._setLoading(false);
+            }
+            return;
+        }
+
+        this._setLoading(true);
+        // Create the sampler, injecting onload
+        this.instruments[instrumentKey] = samplerFactory(() => {
+            if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
+                this._setLoading(false);
+            }
+        });
+    }
+
+    _getInstrumentNameFromKey(key) {
+        return key.replace('Sampler', '');
+    }
+
     _loadPianoSampler() {
-        if (this.instruments.pianoSampler) return;
-        this.instruments.pianoSampler = new Tone.Sampler({
+        this._handleSamplerLoad('pianoSampler', (onload) => new Tone.Sampler({
             urls: { "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", "A4": "A4.mp3" },
             release: 1,
             baseUrl: "https://tonejs.github.io/audio/salamander/",
-        }).toDestination();
+            onload: onload
+        }).toDestination());
     }
 
     _loadGuitarSampler() {
-        if (this.instruments.guitarSampler) return;
-        this.instruments.guitarSampler = new Tone.Sampler({
+        this._handleSamplerLoad('guitarSampler', (onload) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/acoustic_guitar_nylon/",
-        }).toDestination();
+            onload: onload
+        }).toDestination());
     }
 
     _loadClarinetSampler() {
-        if (this.instruments.clarinetSampler) return;
-        // Approximation of available notes
-        this.instruments.clarinetSampler = new Tone.Sampler({
+        this._handleSamplerLoad('clarinetSampler', (onload) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/clarinet/",
-        }).toDestination();
+            onload: onload
+        }).toDestination());
     }
 
     _loadDoubleBassSampler() {
-        if (this.instruments.doubleBassSampler) return;
-        this.instruments.doubleBassSampler = new Tone.Sampler({
+        this._handleSamplerLoad('doubleBassSampler', (onload) => new Tone.Sampler({
             urls: { "C2": "C2.wav", "E2": "E2.wav", "A2": "A2.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/contrabass/",
-        }).toDestination();
+            onload: onload
+        }).toDestination());
     }
 
     _loadOboeSampler() {
-        if (this.instruments.oboeSampler) return;
-        // Using bassoon as fallback or just relying on Synth if it fails to load specific Oboe samples
-        // (nbrosowsky has bassoon)
-        this.instruments.oboeSampler = new Tone.Sampler({
+        this._handleSamplerLoad('oboeSampler', (onload) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/bassoon/",
-        }).toDestination();
+            onload: onload
+        }).toDestination());
     }
 
     _loadElectricGuitarSampler() {
-        if (this.instruments.electricGuitarSampler) return;
-        this.instruments.electricGuitarSampler = new Tone.Sampler({
+        this._handleSamplerLoad('electricGuitarSampler', (onload) => new Tone.Sampler({
              urls: { "C3": "C3.wav", "E3": "E3.wav", "A3": "A3.wav", "C4": "C4.wav" },
              baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-electric/",
-        }).toDestination();
+             onload: onload
+        }).toDestination());
     }
 
 

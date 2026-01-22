@@ -91,6 +91,20 @@ header h1 {
   text-align: center;
 }
 
+.loading-indicator {
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+    text-shadow: 0 0 5px var(--secondary-color);
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
 /* Controls */
 .controls-container {
   display: flex;
@@ -217,8 +231,11 @@ header h1 {
     position: absolute;
     pointer-events: none;
     animation: fadeOut 1s forwards;
+    font-size: 2rem;
+    z-index: 10;
 }
 
 @keyframes fadeOut {
-    to { opacity: 0; transform: translateY(-50px); }
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(-50px) rotate(45deg); }
 }
