@@ -179,12 +179,9 @@ class AudioEngine {
         this._setLoading(true);
         // Create the sampler, injecting onload
         this.instruments[instrumentKey] = samplerFactory(() => {
-            // Artificial delay for fun UX and to prevent flashing
-            setTimeout(() => {
-                if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
-                    this._setLoading(false);
-                }
-            }, 800);
+            if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
+                this._setLoading(false);
+            }
         });
     }
 
