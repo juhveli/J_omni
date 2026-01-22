@@ -179,9 +179,12 @@ class AudioEngine {
         this._setLoading(true);
         // Create the sampler, injecting onload
         this.instruments[instrumentKey] = samplerFactory(() => {
-            if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
-                this._setLoading(false);
-            }
+            // Artificial delay for fun UX and to prevent flashing
+            setTimeout(() => {
+                if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
+                    this._setLoading(false);
+                }
+            }, 800);
         });
     }
 
@@ -239,24 +242,41 @@ class AudioEngine {
     }
 
 
-    playNote(note) {
+    playMelody(melody) {
+        if (!this.initialized) return;
+
+        const now = Tone.now();
+        let cumulativeTime = 0;
+
+        melody.forEach(item => {
+             const duration = item.duration || "8n";
+             const note = item.note;
+
+             // Schedule note
+             this.playNote(note, duration, now + cumulativeTime);
+
+             cumulativeTime += Tone.Time(duration).toSeconds();
+        });
+    }
+
+    playNote(note, duration = "8n", time = undefined) {
         if (!this.initialized) return;
 
         // Drums handling
         if (this.currentInstrument === 'drums') {
-            this._playDrum(note);
+            this._playDrum(note, time);
             return;
         }
 
         // Melodic Instruments
         if (this.soundType === 'sampled') {
-            this._playSampled(note);
+            this._playSampled(note, duration, time);
         } else {
-            this._playSynthesized(note);
+            this._playSynthesized(note, duration, time);
         }
     }
 
-    _playDrum(note) {
+    _playDrum(note, time) {
         // note can be "Kick", "Snare" etc. or mapped note "C2", "D2"
         const drum = note.toLowerCase(); // simplified
 
@@ -274,18 +294,18 @@ class AudioEngine {
         // Samples could be added here if valid URLs are found.
 
         switch (type) {
-            case 'kick': synths.kick.triggerAttackRelease("C2", "8n"); break;
-            case 'snare': synths.snare.triggerAttackRelease("8n"); break;
-            case 'hihat': synths.hihat.triggerAttackRelease("32n"); break;
-            case 'crash': synths.crash.triggerAttackRelease("8n"); break;
-            case 'tom': synths.tom.triggerAttackRelease("G2", "8n"); break;
+            case 'kick': synths.kick.triggerAttackRelease("C2", "8n", time); break;
+            case 'snare': synths.snare.triggerAttackRelease("8n", time); break;
+            case 'hihat': synths.hihat.triggerAttackRelease("32n", time); break;
+            case 'crash': synths.crash.triggerAttackRelease("8n", time); break;
+            case 'tom': synths.tom.triggerAttackRelease("G2", "8n", time); break;
             default:
                 // Fallback for random notes in drum mode
-                synths.kick.triggerAttackRelease("C2", "8n");
+                synths.kick.triggerAttackRelease("C2", "8n", time);
         }
     }
 
-    _playSampled(note) {
+    _playSampled(note, duration, time) {
         const inst = this.instruments;
         let sampler = null;
 
@@ -299,14 +319,14 @@ class AudioEngine {
         }
 
         if (sampler && sampler.loaded) {
-            sampler.triggerAttackRelease(note, "8n");
+            sampler.triggerAttackRelease(note, duration, time);
         } else {
             // Fallback to synth if sampler not loaded/ready
-            this._playSynthesized(note);
+            this._playSynthesized(note, duration, time);
         }
     }
 
-    _playSynthesized(note) {
+    _playSynthesized(note, duration, time) {
         const inst = this.instruments;
         let synth = null;
 
@@ -321,7 +341,7 @@ class AudioEngine {
         }
 
         if (synth) {
-            synth.triggerAttackRelease(note, "8n");
+            synth.triggerAttackRelease(note, duration, time);
         }
     }
 }

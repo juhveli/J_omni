@@ -1,104 +1,84 @@
 import React from 'react';
+import AudioEngine from '../utils/AudioEngine';
+import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+
+  const handleMagicClick = () => {
+    AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
   return (
     <div className="controls-container">
-      <div className="control-group">
+      <div className="control-group full-width">
         <h3>Instrument</h3>
-        <div className="toggle-group">
-          <button
-            className={`control-btn ${currentInstrument === 'piano' ? 'active' : ''}`}
-            onClick={() => setInstrument('piano')}
-            aria-pressed={currentInstrument === 'piano'}
-          >
-            🎹 Piano
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'guitar' ? 'active' : ''}`}
-            onClick={() => setInstrument('guitar')}
-            aria-pressed={currentInstrument === 'guitar'}
-          >
-            🎸 Guitar
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'clarinet' ? 'active' : ''}`}
-            onClick={() => setInstrument('clarinet')}
-            aria-pressed={currentInstrument === 'clarinet'}
-          >
-            🎷 Clarinet
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'oboe' ? 'active' : ''}`}
-            onClick={() => setInstrument('oboe')}
-            aria-pressed={currentInstrument === 'oboe'}
-          >
-            🐍 Oboe
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'doubleBass' ? 'active' : ''}`}
-            onClick={() => setInstrument('doubleBass')}
-            aria-pressed={currentInstrument === 'doubleBass'}
-          >
-            🎻 Bass
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'electricGuitar' ? 'active' : ''}`}
-            onClick={() => setInstrument('electricGuitar')}
-            aria-pressed={currentInstrument === 'electricGuitar'}
-          >
-            🎸⚡ E. Guitar
-          </button>
-          <button
-            className={`control-btn ${currentInstrument === 'drums' ? 'active' : ''}`}
-            onClick={() => setInstrument('drums')}
-            aria-pressed={currentInstrument === 'drums'}
-          >
-            🥁 Drums
-          </button>
+        <div className="toggle-group instrument-group">
+          {INSTRUMENTS.map((inst) => (
+            <button
+              key={inst.id}
+              className={`control-btn instrument-btn ${currentInstrument === inst.id ? 'active' : ''}`}
+              onClick={() => setInstrument(inst.id)}
+              aria-pressed={currentInstrument === inst.id}
+            >
+              <span className="btn-icon">{inst.icon}</span>
+              <span className="btn-label">{inst.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="control-group">
-        <h3>Sound Mode</h3>
-        <div className="toggle-group">
-          <button
-            className={`control-btn ${soundType === 'sampled' ? 'active' : ''}`}
-            onClick={() => setSoundType('sampled')}
-            aria-pressed={soundType === 'sampled'}
-          >
-            🎧 Real
-          </button>
-          <button
-            className={`control-btn ${soundType === 'synthesized' ? 'active' : ''}`}
-            onClick={() => setSoundType('synthesized')}
-            aria-pressed={soundType === 'synthesized'}
-          >
-            🤖 Computer
-          </button>
-        </div>
-      </div>
-
-      {currentInstrument !== 'drums' && (
+      <div className="settings-row">
         <div className="control-group">
-          <h3>Scale</h3>
+          <h3>Sound Mode</h3>
           <div className="toggle-group">
             <button
-              className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
-              onClick={() => setScale('simple')}
-              aria-pressed={currentScale === 'simple'}
+              className={`control-btn ${soundType === 'sampled' ? 'active' : ''}`}
+              onClick={() => setSoundType('sampled')}
+              aria-pressed={soundType === 'sampled'}
             >
-              Simple (C Major)
+              🎧 Real
             </button>
             <button
-              className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
-              onClick={() => setScale('full')}
-              aria-pressed={currentScale === 'full'}
+              className={`control-btn ${soundType === 'synthesized' ? 'active' : ''}`}
+              onClick={() => setSoundType('synthesized')}
+              aria-pressed={soundType === 'synthesized'}
             >
-              Full (Chromatic)
+              🤖 Computer
             </button>
           </div>
         </div>
-      )}
+
+        {currentInstrument !== 'drums' && (
+          <div className="control-group">
+            <h3>Scale</h3>
+            <div className="toggle-group">
+              <button
+                className={`control-btn ${currentScale === 'simple' ? 'active' : ''}`}
+                onClick={() => setScale('simple')}
+                aria-pressed={currentScale === 'simple'}
+              >
+                🌈 Simple
+              </button>
+              <button
+                className={`control-btn ${currentScale === 'full' ? 'active' : ''}`}
+                onClick={() => setScale('full')}
+                aria-pressed={currentScale === 'full'}
+              >
+                🎹 Full
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="control-group">
+            <h3>Fun</h3>
+            <div className="toggle-group">
+                <button className="control-btn" onClick={handleMagicClick}>
+                    🪄 Magic Melody
+                </button>
+            </div>
+         </div>
+      </div>
     </div>
   );
 };
