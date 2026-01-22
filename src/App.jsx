@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import './App.css'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
 import AudioEngine from './utils/AudioEngine'

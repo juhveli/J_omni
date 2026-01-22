@@ -65,6 +65,18 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   };
 
   useEffect(() => {
+    // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
+    const unsubscribe = AudioEngine.subscribeToNotes((note) => {
+        setActiveNote(note);
+        // Reset after short delay to simulate press release
+        setTimeout(() => {
+            setActiveNote(prev => prev === note ? null : prev);
+        }, 300);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.repeat) return;
 

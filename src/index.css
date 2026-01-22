@@ -3,7 +3,7 @@
   --text-color: #ffffff;
   --primary-color: #ff00cc;
   --secondary-color: #00ffff;
-  --font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+  --font-family: 'Comic Sans MS', 'Chalkboard SE', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
 }
 
 body {
