@@ -4,6 +4,7 @@ class AudioEngine {
     constructor() {
         this.isLoading = false;
         this.listeners = [];
+        this.noteListeners = [];
 
         this.instruments = {
             // Samplers
@@ -125,6 +126,28 @@ class AudioEngine {
         return () => {
             this.listeners = this.listeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToNotes(callback) {
+        this.noteListeners.push(callback);
+        return () => {
+            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    _emitNoteEvent(note, time) {
+        // Calculate delay in milliseconds
+        // If time is undefined, delay is 0
+        const now = Tone.now();
+        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
+
+        if (delay === 0) {
+            this.noteListeners.forEach(cb => cb(note));
+        } else {
+            setTimeout(() => {
+                this.noteListeners.forEach(cb => cb(note));
+            }, delay);
+        }
     }
 
     _setLoading(loading) {
@@ -261,6 +284,8 @@ class AudioEngine {
 
     playNote(note, duration = "8n", time = undefined) {
         if (!this.initialized) return;
+
+        this._emitNoteEvent(note, time);
 
         // Drums handling
         if (this.currentInstrument === 'drums') {
