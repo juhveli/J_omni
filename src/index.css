@@ -91,31 +91,75 @@ header h1 {
   text-align: center;
 }
 
-.loading-indicator {
-    color: var(--secondary-color);
-    font-size: 1.2rem;
-    font-weight: bold;
-    animation: pulse 1s infinite;
-    text-shadow: 0 0 5px var(--secondary-color);
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(26, 11, 46, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  animation: fadeIn 0.3s ease;
 }
 
-@keyframes pulse {
-    0% { opacity: 0.5; }
-    50% { opacity: 1; }
-    100% { opacity: 0.5; }
+.loading-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  font-size: 4rem;
+  animation: spin 2s linear infinite;
+}
+
+.loading-icon {
+  font-size: 5rem;
+  animation: bounce 1s infinite alternate;
+  filter: drop-shadow(0 0 20px var(--primary-color));
+}
+
+.loading-content h2 {
+  color: var(--secondary-color);
+  font-size: 2rem;
+  text-shadow: 0 0 10px var(--secondary-color);
+  margin: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-20px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Controls */
 .controls-container {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
   margin-bottom: 1rem;
-  padding: 1rem;
+  padding: 1.5rem;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 25px;
   border: 1px solid rgba(255,255,255,0.2);
+  width: 90%;
+  max-width: 900px;
 }
 
 .control-group {
@@ -124,41 +168,106 @@ header h1 {
     align-items: center;
 }
 
+.control-group.full-width {
+    width: 100%;
+}
+
+.settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3rem;
+    width: 100%;
+}
+
 .control-group h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
   color: var(--secondary-color);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
 .toggle-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.8rem;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.instrument-group {
+    justify-content: center;
+    gap: 1rem;
 }
 
 .control-btn {
   background: transparent;
   border: 2px solid var(--primary-color);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 15px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-family: inherit;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .control-btn:hover {
     background: rgba(255, 0, 204, 0.2);
+    transform: translateY(-3px) rotate(-2deg);
+    box-shadow: 0 5px 15px rgba(255, 0, 204, 0.4);
 }
 
 .control-btn.active {
   background: var(--primary-color);
-  box-shadow: 0 0 15px var(--primary-color);
+  box-shadow: 0 0 20px var(--primary-color);
   border-color: var(--primary-color);
+  transform: scale(1.05) rotate(0deg);
+}
+
+/* Instrument Buttons Special Styling */
+.instrument-btn {
+    flex-direction: column;
+    width: 90px;
+    height: 90px;
+    padding: 0.5rem;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.instrument-btn .btn-icon {
+    font-size: 2.5rem;
+    line-height: 1.2;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+}
+
+.instrument-btn .btn-label {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .instrument-btn {
+        width: 70px;
+        height: 70px;
+    }
+    .instrument-btn .btn-icon {
+        font-size: 2rem;
+    }
+    .instrument-btn .btn-label {
+        font-size: 0.7rem;
+    }
+    .controls-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    .settings-row {
+        gap: 1rem;
+    }
 }
 
 /* Instrument Pad */

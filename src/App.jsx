@@ -3,6 +3,7 @@ import './App.css'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
 import AudioEngine from './utils/AudioEngine'
+import { INSTRUMENTS } from './constants'
 
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
@@ -31,6 +32,8 @@ function App() {
     AudioEngine.setSoundType(type)
   }
 
+  const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
+
   return (
     <div className="app-container">
       {!isAudioStarted ? (
@@ -42,9 +45,17 @@ function App() {
         </div>
       ) : (
         <div className="main-interface">
+           {isLoading && (
+             <div className="loading-overlay">
+               <div className="loading-content">
+                 <div className="loading-spinner">✨</div>
+                 <h2>Summoning the {activeInstrumentObj.label}...</h2>
+                 <div className="loading-icon">{activeInstrumentObj.icon}</div>
+               </div>
+             </div>
+           )}
            <header>
              <h1>🦄 Unicorn Music 🎵</h1>
-             {isLoading && <div className="loading-indicator">⏳ Loading Sounds...</div>}
            </header>
            <Controls
              currentInstrument={currentInstrument}
