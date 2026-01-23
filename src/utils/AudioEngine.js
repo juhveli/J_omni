@@ -200,12 +200,23 @@ class AudioEngine {
         }
 
         this._setLoading(true);
-        // Create the sampler, injecting onload
-        this.instruments[instrumentKey] = samplerFactory(() => {
+
+        const onLoad = () => {
             if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey) && this.soundType === 'sampled') {
                 this._setLoading(false);
             }
-        });
+        };
+
+        const onError = (err) => {
+            console.error(`Failed to load sampler for ${instrumentKey}`, err);
+            // Ensure loading is stopped so UI doesn't hang
+            if (this.currentInstrument === this._getInstrumentNameFromKey(instrumentKey)) {
+                this._setLoading(false);
+            }
+        };
+
+        // Create the sampler, injecting onload and onerror
+        this.instruments[instrumentKey] = samplerFactory(onLoad, onError);
     }
 
     _getInstrumentNameFromKey(key) {
@@ -213,51 +224,57 @@ class AudioEngine {
     }
 
     _loadPianoSampler() {
-        this._handleSamplerLoad('pianoSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('pianoSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", "A4": "A4.mp3" },
             release: 1,
             baseUrl: "https://tonejs.github.io/audio/salamander/",
-            onload: onload
+            onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
     _loadGuitarSampler() {
-        this._handleSamplerLoad('guitarSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('guitarSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/acoustic_guitar_nylon/",
-            onload: onload
+            onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
     _loadClarinetSampler() {
-        this._handleSamplerLoad('clarinetSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('clarinetSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/clarinet/",
-            onload: onload
+            onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
     _loadDoubleBassSampler() {
-        this._handleSamplerLoad('doubleBassSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('doubleBassSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C2": "C2.wav", "E2": "E2.wav", "A2": "A2.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/contrabass/",
-            onload: onload
+            onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
     _loadOboeSampler() {
-        this._handleSamplerLoad('oboeSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('oboeSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav" },
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/bassoon/",
-            onload: onload
+            onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
     _loadElectricGuitarSampler() {
-        this._handleSamplerLoad('electricGuitarSampler', (onload) => new Tone.Sampler({
+        this._handleSamplerLoad('electricGuitarSampler', (onload, onerror) => new Tone.Sampler({
              urls: { "C3": "C3.wav", "E3": "E3.wav", "A3": "A3.wav", "C4": "C4.wav" },
              baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-electric/",
-             onload: onload
+             onload: onload,
+            onerror: onerror
         }).toDestination());
     }
 
