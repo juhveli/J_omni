@@ -20,6 +20,7 @@ body {
 #root {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -40,7 +41,8 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(26, 11, 46, 0.98);
   display: flex;
   justify-content: center;
@@ -96,7 +98,8 @@ header h1 {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(26, 11, 46, 0.85);
   backdrop-filter: blur(5px);
   display: flex;
