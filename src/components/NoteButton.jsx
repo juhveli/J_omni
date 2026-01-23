@@ -18,37 +18,32 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
     }, 1000);
   };
 
-  const handleInteraction = () => {
-    if (!forceActive) onPlay(note); // Only play if not already playing via prop
-    setIsActive(true);
-    addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+  const triggerInteraction = (playSound = true) => {
+      if (playSound) onPlay(note);
+      setIsActive(true);
+      addSparkle();
+      setTimeout(() => setIsActive(false), 200);
   };
 
-  // Handle external forceActive (keyboard)
+  // Handle external forceActive (keyboard from parent)
   useEffect(() => {
     if (forceActive) {
-      handleInteraction();
+      triggerInteraction(false); // Don't play sound, parent handled it
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
 
   const handlePointerDown = (e) => {
-    e.preventDefault();
-    onPlay(note);
-    setIsActive(true);
-    addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+    // Prevents focus and mouse click emission on some browsers, avoiding double-fire
+    // while keeping the UI responsive.
+    if (e.cancelable) e.preventDefault();
+    triggerInteraction(true);
   };
 
-  // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
   const handleClick = () => {
-     // Usually covered by pointerdown, but good for a11y keyboard triggering if we separate handlers
-     // Keyboard 'Enter' triggers onClick
-     onPlay(note);
-     setIsActive(true);
-     addSparkle();
-     setTimeout(() => setIsActive(false), 200);
+     // This handles Keyboard interactions (Enter/Space) where pointer events don't fire.
+     // For mouse/touch, handlePointerDown's preventDefault() suppresses this click.
+     triggerInteraction(true);
   };
 
   return (
