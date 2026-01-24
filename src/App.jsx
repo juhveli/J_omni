@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
+import Recorder from './components/Recorder'
 import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
@@ -39,7 +40,16 @@ function App() {
         <div className="start-overlay" onClick={handleStart}>
           <div className="start-content">
             <h1>🦄 Unicorn Music 🎵</h1>
-            <button className="start-btn">Tap to Start!</button>
+            <button
+              className="start-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStart();
+              }}
+              autoFocus
+            >
+              Tap to Start!
+            </button>
           </div>
         </div>
       ) : (
@@ -64,6 +74,7 @@ function App() {
              soundType={soundType}
              setSoundType={handleSoundTypeChange}
            />
+           <Recorder />
            <InstrumentPad
              currentScale={currentScale}
              currentInstrument={currentInstrument}
