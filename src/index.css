@@ -284,6 +284,19 @@ header h1 {
   width: 100%;
   max-width: 1000px;
   box-sizing: border-box;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 600px) {
+    .instrument-pad {
+        justify-content: flex-start;
+        padding-bottom: 20px; /* space for scrollbar */
+    }
+    .note-btn {
+        flex-shrink: 0;
+        min-width: 50px;
+    }
 }
 
 .note-btn {
