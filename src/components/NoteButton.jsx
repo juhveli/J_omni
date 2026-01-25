@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
+const NoteButton = ({ note, label, color, onPlay, forceActive, keyboardShortcut }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -42,13 +42,15 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
   };
 
   // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
-  const handleClick = () => {
+  const handleClick = (e) => {
      // Usually covered by pointerdown, but good for a11y keyboard triggering if we separate handlers
-     // Keyboard 'Enter' triggers onClick
-     onPlay(note);
-     setIsActive(true);
-     addSparkle();
-     setTimeout(() => setIsActive(false), 200);
+     // Keyboard 'Enter' triggers onClick with detail === 0
+     if (e.detail === 0) {
+       onPlay(note);
+       setIsActive(true);
+       addSparkle();
+       setTimeout(() => setIsActive(false), 200);
+     }
   };
 
   return (
@@ -60,6 +62,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
       aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
+      {keyboardShortcut && <span className="keyboard-hint">{keyboardShortcut}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
