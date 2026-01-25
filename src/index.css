@@ -318,6 +318,16 @@ header h1 {
   pointer-events: none;
 }
 
+.keyboard-hint {
+  position: absolute;
+  bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
+  font-weight: normal;
+  pointer-events: none;
+}
+
 /* Simple scale button sizes */
 .instrument-pad.simple .note-btn {
     max-width: 100px;

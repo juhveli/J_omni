@@ -50,6 +50,11 @@ const DRUMS = [
     { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+const KEY_MAPPINGS = {
+  simple: ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+  full: ['a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k']
+};
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNote, setActiveNote] = useState(null);
 
@@ -84,31 +89,14 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       // Map keys to note indices
-      // Simple/Drums: A, S, D, F...
-      // Full: Specific mapping to mimic piano
-
+      let keys = [];
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-          const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-          index = keys.indexOf(key);
+          keys = KEY_MAPPINGS.simple;
       } else if (currentScale === 'full') {
-          // Mapping for full scale (chromatic)
-          const keyMap = {
-              'a': 0, // C
-              'w': 1, // C#
-              's': 2, // D
-              'e': 3, // D#
-              'd': 4, // E
-              'f': 5, // F
-              't': 6, // F#
-              'g': 7, // G
-              'y': 8, // G#
-              'h': 9, // A
-              'u': 10, // A#
-              'j': 11, // B
-              'k': 12  // C5
-          };
-          index = keyMap[key] !== undefined ? keyMap[key] : -1;
+          keys = KEY_MAPPINGS.full;
       }
+
+      index = keys.indexOf(key);
 
       if (index >= 0 && index < notes.length) {
           const note = notes[index].note;
@@ -132,16 +120,22 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
-        <NoteButton
-          key={n.note}
-          note={n.note}
-          color={n.color}
-          label={n.label}
-          onPlay={handlePlay}
-          forceActive={activeNote === n.note}
-        />
-      ))}
+      {notes.map((n, i) => {
+        let keys = (currentInstrument === 'drums' || currentScale === 'simple') ? KEY_MAPPINGS.simple : KEY_MAPPINGS.full;
+        const shortcut = keys[i] ? keys[i].toUpperCase() : '';
+
+        return (
+          <NoteButton
+            key={n.note}
+            note={n.note}
+            color={n.color}
+            label={n.label}
+            onPlay={handlePlay}
+            forceActive={activeNote === n.note}
+            keyboardShortcut={shortcut}
+          />
+        );
+      })}
     </div>
   );
 };
