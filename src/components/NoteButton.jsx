@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
+const NoteButton = ({ note, label, color, onPlay, forceActive, keyboardShortcut }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -27,7 +27,8 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
 
   // Handle external forceActive (keyboard)
   useEffect(() => {
-    if (forceActive) {
+    // Only trigger if not already active to avoid double visuals from loopback
+    if (forceActive && !isActive) {
       handleInteraction();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,6 +61,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
       aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
+      {keyboardShortcut && <span className="keyboard-hint">{keyboardShortcut.toUpperCase()}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
