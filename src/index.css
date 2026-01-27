@@ -323,19 +323,42 @@ header h1 {
     max-width: 100px;
 }
 
-/* Full scale adjustment */
+/* Full scale adjustment (Piano Look) */
+.instrument-pad.full {
+  align-items: flex-start; /* Align keys to top (back of piano) */
+}
+
 .instrument-pad.full .note-btn {
   font-size: 1rem;
   max-width: 60px;
   border-width: 2px;
+  height: 100%; /* White keys full height */
 }
 
-/* Visual rhythm */
-.instrument-pad .note-btn:nth-child(odd) {
+.instrument-pad.full .note-btn.sharp {
+  height: 60%; /* Black keys shorter */
+  background: rgba(0, 0, 0, 0.6) !important; /* Darker */
+  z-index: 2;
+  border-color: #666 !important;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Visual rhythm (Simple/Drums only) */
+.instrument-pad:not(.full) .note-btn:nth-child(odd) {
   height: 75%;
 }
-.instrument-pad .note-btn:nth-child(even) {
+.instrument-pad:not(.full) .note-btn:nth-child(even) {
   height: 65%;
+}
+
+.keyboard-hint {
+  position: absolute;
+  bottom: 5px;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  font-family: monospace;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Sparkle effect helper (optional) */
