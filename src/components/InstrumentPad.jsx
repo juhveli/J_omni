@@ -130,9 +130,19 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
   }, [notes, currentInstrument, currentScale]);
 
+  const getKeyboardShortcut = (index) => {
+      if (currentInstrument === 'drums' || currentScale === 'simple') {
+          const keys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
+          return keys[index] || '';
+      } else { // full
+          const keys = ['A', 'W', 'S', 'E', 'D', 'F', 'T', 'G', 'Y', 'H', 'U', 'J', 'K'];
+          return keys[index] || '';
+      }
+  };
+
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
+      {notes.map((n, index) => (
         <NoteButton
           key={n.note}
           note={n.note}
@@ -140,6 +150,8 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           label={n.label}
           onPlay={handlePlay}
           forceActive={activeNote === n.note}
+          keyboardShortcut={getKeyboardShortcut(index)}
+          isSharp={n.note.includes('#')}
         />
       ))}
     </div>
