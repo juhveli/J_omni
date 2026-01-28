@@ -76,6 +76,9 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <button className="control-btn" disabled title="Coming Soon!">
+                    🎙️ Recording Studio
+                </button>
             </div>
          </div>
       </div>

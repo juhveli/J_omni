@@ -132,16 +132,33 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
-        <NoteButton
-          key={n.note}
-          note={n.note}
-          color={n.color}
-          label={n.label}
-          onPlay={handlePlay}
-          forceActive={activeNote === n.note}
-        />
-      ))}
+      {notes.map((n, index) => {
+        const isSharp = n.note.includes('#');
+        let shortcut = '';
+        if (currentInstrument === 'drums' || currentScale === 'simple') {
+            const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+            shortcut = keys[index] || '';
+        } else if (currentScale === 'full') {
+             const keyMapByIndex = {
+                0: 'a', 1: 'w', 2: 's', 3: 'e', 4: 'd', 5: 'f', 6: 't',
+                7: 'g', 8: 'y', 9: 'h', 10: 'u', 11: 'j', 12: 'k'
+            };
+            shortcut = keyMapByIndex[index] || '';
+        }
+
+        return (
+          <NoteButton
+            key={n.note}
+            note={n.note}
+            color={n.color}
+            label={n.label}
+            onPlay={handlePlay}
+            forceActive={activeNote === n.note}
+            isSharp={isSharp}
+            shortcut={shortcut.toUpperCase()}
+          />
+        );
+      })}
     </div>
   );
 };
