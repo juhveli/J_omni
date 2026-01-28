@@ -233,6 +233,17 @@ header h1 {
   transform: scale(1.05) rotate(0deg);
 }
 
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+}
+.control-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+}
+
 /* Instrument Buttons Special Styling */
 .instrument-btn {
     flex-direction: column;
@@ -330,12 +341,33 @@ header h1 {
   border-width: 2px;
 }
 
-/* Visual rhythm */
-.instrument-pad .note-btn:nth-child(odd) {
+/* Visual rhythm for simple scale */
+.instrument-pad.simple .note-btn:nth-child(odd) {
   height: 75%;
 }
-.instrument-pad .note-btn:nth-child(even) {
+.instrument-pad.simple .note-btn:nth-child(even) {
   height: 65%;
+}
+
+/* Piano layout for full scale */
+.instrument-pad.full .note-btn.natural {
+    height: 100%;
+}
+.instrument-pad.full .note-btn.sharp {
+    height: 60%;
+    transform-origin: top;
+}
+
+/* Keyboard Hint */
+.keyboard-hint {
+    position: absolute;
+    bottom: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    font-family: monospace;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 /* Sparkle effect helper (optional) */
