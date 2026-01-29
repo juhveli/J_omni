@@ -50,14 +50,42 @@ const DRUMS = [
     { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+// Key mappings
+const KEYS_SIMPLE = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const KEY_MAP_FULL = {
+    'a': 0, // C
+    'w': 1, // C#
+    's': 2, // D
+    'e': 3, // D#
+    'd': 4, // E
+    'f': 5, // F
+    't': 6, // F#
+    'g': 7, // G
+    'y': 8, // G#
+    'h': 9, // A
+    'u': 10, // A#
+    'j': 11, // B
+    'k': 12  // C5
+};
+// Create reverse map for display: index -> key
+const KEYS_FULL_DISPLAY = [];
+Object.entries(KEY_MAP_FULL).forEach(([key, index]) => {
+    KEYS_FULL_DISPLAY[index] = key;
+});
+
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNote, setActiveNote] = useState(null);
 
   let notes;
+  let activeKeys = [];
+
   if (currentInstrument === 'drums') {
       notes = DRUMS;
+      activeKeys = KEYS_SIMPLE;
   } else {
       notes = SCALES[currentScale] || SCALES.simple;
+      activeKeys = currentScale === 'full' ? KEYS_FULL_DISPLAY : KEYS_SIMPLE;
   }
 
   const handlePlay = (note) => {
@@ -83,31 +111,10 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       const key = e.key.toLowerCase();
       let index = -1;
 
-      // Map keys to note indices
-      // Simple/Drums: A, S, D, F...
-      // Full: Specific mapping to mimic piano
-
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-          const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-          index = keys.indexOf(key);
+          index = KEYS_SIMPLE.indexOf(key);
       } else if (currentScale === 'full') {
-          // Mapping for full scale (chromatic)
-          const keyMap = {
-              'a': 0, // C
-              'w': 1, // C#
-              's': 2, // D
-              'e': 3, // D#
-              'd': 4, // E
-              'f': 5, // F
-              't': 6, // F#
-              'g': 7, // G
-              'y': 8, // G#
-              'h': 9, // A
-              'u': 10, // A#
-              'j': 11, // B
-              'k': 12  // C5
-          };
-          index = keyMap[key] !== undefined ? keyMap[key] : -1;
+          index = KEY_MAP_FULL[key] !== undefined ? KEY_MAP_FULL[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -132,7 +139,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
+      {notes.map((n, i) => (
         <NoteButton
           key={n.note}
           note={n.note}
@@ -140,6 +147,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           label={n.label}
           onPlay={handlePlay}
           forceActive={activeNote === n.note}
+          shortcut={activeKeys[i]}
         />
       ))}
     </div>

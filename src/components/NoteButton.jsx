@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
+const NoteButton = ({ note, label, color, onPlay, forceActive, shortcut }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -60,6 +60,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
       aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
+      {shortcut && <span className="keyboard-hint">{shortcut.toUpperCase()}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
