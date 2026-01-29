@@ -250,7 +250,8 @@ header h1 {
 }
 
 .instrument-btn .btn-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -350,4 +351,39 @@ header h1 {
 @keyframes fadeOut {
     0% { opacity: 1; transform: translateY(0) rotate(0deg); }
     100% { opacity: 0; transform: translateY(-50px) rotate(45deg); }
+}
+
+/* Keyboard Hint */
+.keyboard-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.note-btn:active .keyboard-hint,
+.note-btn.active .keyboard-hint {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Disabled Button Style */
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.control-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
 }
