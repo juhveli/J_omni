@@ -323,19 +323,48 @@ header h1 {
     max-width: 100px;
 }
 
-/* Full scale adjustment */
+/* Visual rhythm - Only for simple/drums */
+.instrument-pad:not(.full) .note-btn:nth-child(odd) {
+  height: 75%;
+}
+.instrument-pad:not(.full) .note-btn:nth-child(even) {
+  height: 65%;
+}
+
+/* Full scale (Piano) layout */
+.instrument-pad.full {
+    align-items: flex-start;
+    gap: 0.2rem;
+}
+
 .instrument-pad.full .note-btn {
   font-size: 1rem;
   max-width: 60px;
   border-width: 2px;
+  height: 100%;
 }
 
-/* Visual rhythm */
-.instrument-pad .note-btn:nth-child(odd) {
-  height: 75%;
+.instrument-pad.full .note-btn.sharp {
+    height: 60%;
+    border-color: #666;
 }
-.instrument-pad .note-btn:nth-child(even) {
-  height: 65%;
+
+/* Keyboard hints */
+.keyboard-hint {
+    position: absolute;
+    bottom: 5px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: monospace;
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
+.note-btn.sharp .keyboard-hint {
+    bottom: 2px;
+    font-size: 0.6rem;
 }
 
 /* Sparkle effect helper (optional) */
