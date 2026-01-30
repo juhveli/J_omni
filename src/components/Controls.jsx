@@ -76,6 +76,14 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <button
+                  className="control-btn"
+                  disabled
+                  title="Coming Soon!"
+                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                >
+                    🎙️ Record
+                </button>
             </div>
          </div>
       </div>
