@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
+const NoteButton = ({ note, label, color, onPlay, forceActive, shortcut }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -18,8 +18,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
     }, 1000);
   };
 
-  const handleInteraction = () => {
-    if (!forceActive) onPlay(note); // Only play if not already playing via prop
+  const triggerVisuals = () => {
     setIsActive(true);
     addSparkle();
     setTimeout(() => setIsActive(false), 200);
@@ -28,7 +27,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
   // Handle external forceActive (keyboard)
   useEffect(() => {
     if (forceActive) {
-      handleInteraction();
+      triggerVisuals();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
@@ -36,9 +35,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
   const handlePointerDown = (e) => {
     e.preventDefault();
     onPlay(note);
-    setIsActive(true);
-    addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+    triggerVisuals();
   };
 
   // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
@@ -46,9 +43,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
      // Usually covered by pointerdown, but good for a11y keyboard triggering if we separate handlers
      // Keyboard 'Enter' triggers onClick
      onPlay(note);
-     setIsActive(true);
-     addSparkle();
-     setTimeout(() => setIsActive(false), 200);
+     triggerVisuals();
   };
 
   return (
@@ -60,6 +55,7 @@ const NoteButton = ({ note, label, color, onPlay, forceActive }) => {
       aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
+      {shortcut && <span className="keyboard-hint">{shortcut}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
