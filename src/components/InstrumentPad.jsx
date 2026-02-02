@@ -64,6 +64,18 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     AudioEngine.playNote(note);
   };
 
+  const getShortcut = (index) => {
+      if (currentInstrument === 'drums' || currentScale === 'simple') {
+          const keys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
+          return keys[index] || '';
+      } else {
+          // Full scale mapping
+          // 0:A, 1:W, 2:S, 3:E, 4:D, 5:F, 6:T, 7:G, 8:Y, 9:H, 10:U, 11:J, 12:K
+          const map = ['A', 'W', 'S', 'E', 'D', 'F', 'T', 'G', 'Y', 'H', 'U', 'J', 'K'];
+          return map[index] || '';
+      }
+  };
+
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
@@ -132,7 +144,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
+      {notes.map((n, i) => (
         <NoteButton
           key={n.note}
           note={n.note}
@@ -140,6 +152,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           label={n.label}
           onPlay={handlePlay}
           forceActive={activeNote === n.note}
+          shortcut={getShortcut(i)}
         />
       ))}
     </div>
