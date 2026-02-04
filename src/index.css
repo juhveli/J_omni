@@ -330,12 +330,57 @@ header h1 {
   border-width: 2px;
 }
 
-/* Visual rhythm */
-.instrument-pad .note-btn:nth-child(odd) {
+/* Visual rhythm - Simple Scale only */
+.instrument-pad.simple .note-btn:nth-child(odd) {
   height: 75%;
 }
-.instrument-pad .note-btn:nth-child(even) {
+.instrument-pad.simple .note-btn:nth-child(even) {
   height: 65%;
+}
+
+/* Full Scale Layout - Piano Style */
+.instrument-pad.full {
+  align-items: flex-start;
+  gap: 0;
+}
+
+.instrument-pad.full .note-btn {
+  height: 100%;
+  border-radius: 0 0 8px 8px;
+  border-width: 1px;
+  padding-bottom: 0.5rem;
+}
+
+.instrument-pad.full .note-btn.sharp {
+  height: 55%;
+  background: #333; /* Dark grey/black */
+  z-index: 10;
+  margin-left: -10px;
+  margin-right: -10px;
+  flex: 0 0 36px; /* Fixed narrow width for sharps */
+  max-width: 36px;
+  border-color: #666;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.keyboard-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 50%;
+  transform: translateX(50%);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+  background: rgba(0,0,0,0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.instrument-pad.full .note-btn.sharp .keyboard-hint {
+    bottom: 5px;
+    font-size: 0.7rem;
 }
 
 /* Sparkle effect helper (optional) */
