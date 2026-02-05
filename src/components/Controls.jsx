@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [volume, setVolume] = useState(80);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleVolumeChange = (e) => {
+      const val = parseInt(e.target.value, 10);
+      setVolume(val);
+      AudioEngine.setVolume(val);
   };
 
   return (
@@ -48,6 +55,19 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
           </div>
         </div>
 
+        <div className="control-group">
+            <h3>Volume</h3>
+             <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="volume-slider"
+                aria-label="Volume Control"
+             />
+        </div>
+
         {currentInstrument !== 'drums' && (
           <div className="control-group">
             <h3>Scale</h3>
@@ -75,6 +95,9 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+                <button className="control-btn disabled" disabled title="Coming Soon!">
+                    🎙️ Record
                 </button>
             </div>
          </div>
