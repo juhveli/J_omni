@@ -156,6 +156,22 @@ class AudioEngine {
         this.listeners.forEach(cb => cb(this.isLoading));
     }
 
+    setVolume(value) {
+        // value is 0-100
+        const gain = Math.max(0, Math.min(100, value)) / 100;
+        const db = gain <= 0 ? -60 : 20 * Math.log10(gain);
+        // We use -60 as effectively mute because -Infinity can sometimes behave oddly with rampTo if not careful,
+        // but Tone.Destination handles it. Let's stick to -60 for "mute" to be safe or -Infinity.
+        // Actually, let's just use a simple mapping that feels good.
+        // Tone.Destination.volume is in decibels.
+
+        if (gain === 0) {
+            Tone.Destination.volume.rampTo(-Infinity, 0.1);
+        } else {
+            Tone.Destination.volume.rampTo(db, 0.1);
+        }
+    }
+
     setSoundType(type) {
         this.soundType = type;
         console.log(`Sound Type set to: ${type}`);
