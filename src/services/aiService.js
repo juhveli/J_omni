@@ -13,27 +13,37 @@ export const AIService = {
     },
 
     async generateLayer(prompt, duration = 10, style = "piano") {
-        const res = await fetch(`${API_BASE}/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, duration, style })
-        });
-        if (!res.ok) throw new Error("Generation failed");
-        return await res.json();
+        try {
+            const res = await fetch(`${API_BASE}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt, duration, style })
+            });
+            if (!res.ok) throw new Error("Generation failed");
+            return await res.json();
+        } catch (e) {
+             console.warn("AI Generation unavailable, using fallback mock.");
+             return { success: false, message: "Magic Server not found! (This feature needs a backend)" };
+        }
     },
 
     async editSong(audioBlob, prompt, mode = "polish") {
-        const formData = new FormData();
-        // WebM is the default container for Tone.Recorder/MediaRecorder
-        formData.append('file', audioBlob, 'recording.webm');
-        formData.append('prompt', prompt);
-        formData.append('mode', mode);
+        try {
+            const formData = new FormData();
+            // WebM is the default container for Tone.Recorder/MediaRecorder
+            formData.append('file', audioBlob, 'recording.webm');
+            formData.append('prompt', prompt);
+            formData.append('mode', mode);
 
-        const res = await fetch(`${API_BASE}/edit`, {
-            method: 'POST',
-            body: formData
-        });
-        if (!res.ok) throw new Error("Editing failed");
-        return await res.json();
+            const res = await fetch(`${API_BASE}/edit`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) throw new Error("Editing failed");
+            return await res.json();
+        } catch (e) {
+             console.warn("AI Edit unavailable, using fallback mock.");
+             return { success: false, message: "Magic Server not found! (This feature needs a backend)" };
+        }
     }
 };

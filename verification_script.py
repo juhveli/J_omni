@@ -60,8 +60,8 @@ def verify_app():
         page.screenshot(path="verification_toggled.png")
         print("Captured toggled state.")
 
-        # Verify Magic Melody button exists
-        expect(page.locator("button").filter(has_text="Magic Melody")).to_be_visible()
+        # Verify Melody button exists
+        expect(page.locator("button").filter(has_text="Melody")).to_be_visible()
 
         browser.close()
 

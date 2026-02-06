@@ -77,18 +77,10 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                     🪄 Melody
                 </button>
                 <button className="control-btn" onClick={onOpenRecording}>
-                    🎙️ Studio
+                    🎙️ Record
                 </button>
                 <button className="control-btn" onClick={onOpenMagic}>
                     ✨ AI Maker
-                </button>
-                <button
-                  className="control-btn"
-                  disabled
-                  title="Coming Soon!"
-                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                >
-                    🔴 Record
                 </button>
             </div>
          </div>

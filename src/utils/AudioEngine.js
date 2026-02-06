@@ -35,6 +35,8 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+        this.recorder = null;
+        this.masterGain = null;
     }
 
     async initialize() {
@@ -43,20 +45,26 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
+        // Create Master Output and Recorder
+        this.masterGain = new Tone.Gain(1).toDestination();
+        this.recorder = new Tone.Recorder();
+        this.masterGain.connect(this.recorder);
+
+
         // --- SYNTHESIZERS ---
 
         // Piano Synth (Triangle wave)
         this.instruments.synthPiano = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-        }).toDestination();
+        }).connect(this.masterGain);
 
         // Acoustic Guitar Synth
         this.instruments.synthGuitar = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "sawtooth" },
             envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 1 }
         });
-        const guitarFilter = new Tone.Filter(2000, "lowpass").toDestination();
+        const guitarFilter = new Tone.Filter(2000, "lowpass").connect(this.masterGain);
         this.instruments.synthGuitar.connect(guitarFilter);
         this.instruments.synthGuitar.volume.value = -5;
 
@@ -64,53 +72,53 @@ class AudioEngine {
         this.instruments.synthClarinet = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "square" },
             envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 0.5 }
-        }).toDestination();
+        }).connect(this.masterGain);
 
         // Double Bass Synth (Sine/Triangle, Low)
         this.instruments.synthDoubleBass = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.8, release: 1 }
-        }).toDestination();
+        }).connect(this.masterGain);
 
         // Oboe Synth (Sawtooth with vibrato)
         this.instruments.synthOboe = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "sawtooth" },
             envelope: { attack: 0.1, decay: 0.1, sustain: 0.7, release: 0.5 }
-        }).toDestination();
+        }).connect(this.masterGain);
 
         // Electric Guitar Synth (Distorted)
         this.instruments.synthElectricGuitar = new Tone.PolySynth(Tone.Synth, {
              oscillator: { type: "sawtooth" },
              envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.5 }
         });
-        const dist = new Tone.Distortion(0.4).toDestination();
+        const dist = new Tone.Distortion(0.4).connect(this.masterGain);
         this.instruments.synthElectricGuitar.connect(dist);
 
         // Drum Synths
-        this.instruments.drumSynths.kick = new Tone.MembraneSynth().toDestination();
+        this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterGain);
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
             noise: { type: 'white' },
             envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-        }).toDestination();
+        }).connect(this.masterGain);
         this.instruments.drumSynths.hihat = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterGain);
         this.instruments.drumSynths.crash = new Tone.MetalSynth({
              envelope: { attack: 0.001, decay: 1, release: 0.01 },
              harmonicity: 5.1,
              modulationIndex: 64,
              resonance: 3000,
              octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterGain);
         this.instruments.drumSynths.tom = new Tone.MembraneSynth({
             pitchDecay: 0.05,
             octaves: 4,
             oscillator: { type: "sine" }
-        }).toDestination();
+        }).connect(this.masterGain);
 
 
         // --- SAMPLERS ---
@@ -118,6 +126,29 @@ class AudioEngine {
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    async startRecording() {
+        if (!this.initialized) await this.initialize();
+        if (this.recorder.state === 'started') return;
+        this.recorder.start();
+    }
+
+    async stopRecording() {
+        if (!this.initialized || this.recorder.state !== 'started') return null;
+        return await this.recorder.stop();
+    }
+
+    async playBlob(blob) {
+        if (!this.initialized) await this.initialize();
+        const url = URL.createObjectURL(blob);
+        const player = new Tone.Player(url, () => {
+            player.start();
+        }).toDestination();
+        player.onstop = () => {
+            player.dispose();
+            URL.revokeObjectURL(url);
+        };
     }
 
     subscribe(callback) {
@@ -230,7 +261,7 @@ class AudioEngine {
             baseUrl: "https://tonejs.github.io/audio/salamander/",
             onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
     _loadGuitarSampler() {
@@ -239,7 +270,7 @@ class AudioEngine {
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/acoustic_guitar_nylon/",
             onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
     _loadClarinetSampler() {
@@ -248,7 +279,7 @@ class AudioEngine {
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/clarinet/",
             onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
     _loadDoubleBassSampler() {
@@ -257,7 +288,7 @@ class AudioEngine {
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/contrabass/",
             onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
     _loadOboeSampler() {
@@ -266,7 +297,7 @@ class AudioEngine {
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/bassoon/",
             onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
     _loadElectricGuitarSampler() {
@@ -275,7 +306,7 @@ class AudioEngine {
              baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-electric/",
              onload: onload,
             onerror: onerror
-        }).toDestination());
+        }).connect(this.masterGain));
     }
 
 
