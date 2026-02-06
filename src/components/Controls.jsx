@@ -2,7 +2,7 @@ import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, onOpenRecording, onOpenMagic }) => {
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -74,7 +74,13 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <h3>Fun</h3>
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
-                    🪄 Magic Melody
+                    🪄 Melody
+                </button>
+                <button className="control-btn" onClick={onOpenRecording}>
+                    🎙️ Studio
+                </button>
+                <button className="control-btn" onClick={onOpenMagic}>
+                    ✨ AI Maker
                 </button>
                 <button
                   className="control-btn"
