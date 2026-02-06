@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
 import AudioEngine from './utils/AudioEngine'
+import RecordingStudio from './components/RecordingStudio'
+import MagicGenerator from './components/MagicGenerator'
 import { INSTRUMENTS } from './constants'
 
 function App() {
@@ -10,6 +12,7 @@ function App() {
   const [soundType, setSoundType] = useState('sampled')
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [activeModal, setActiveModal] = useState(null)
 
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
@@ -63,11 +66,19 @@ function App() {
              setScale={setCurrentScale}
              soundType={soundType}
              setSoundType={handleSoundTypeChange}
+             onOpenRecording={() => setActiveModal('recording')}
+             onOpenMagic={() => setActiveModal('magic')}
            />
            <InstrumentPad
              currentScale={currentScale}
              currentInstrument={currentInstrument}
            />
+           {activeModal === 'recording' && (
+             <RecordingStudio onClose={() => setActiveModal(null)} />
+           )}
+           {activeModal === 'magic' && (
+             <MagicGenerator onClose={() => setActiveModal(null)} />
+           )}
         </div>
       )}
     </div>
