@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onPlay, forceActive, shortcut, isSharp }) => {
+const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, isSharp }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -64,6 +64,6 @@ const NoteButton = ({ note, label, color, onPlay, forceActive, shortcut, isSharp
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
-};
+});
 
 export default NoteButton;

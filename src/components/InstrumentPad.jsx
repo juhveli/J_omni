@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -81,9 +81,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       notes = SCALES[currentScale] || SCALES.simple;
   }
 
-  const handlePlay = (note) => {
+  const handlePlay = useCallback((note) => {
     AudioEngine.playNote(note);
-  };
+  }, []);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
