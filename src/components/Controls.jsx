@@ -1,8 +1,9 @@
 import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
+import EffectsRack from './EffectsRack';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, onOpenRecording, onOpenMagic }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, isProMode, setIsProMode, onOpenRecording, onOpenMagic }) => {
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -84,7 +85,27 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+         <div className="control-group">
+            <h3>Mode</h3>
+            <div className="toggle-group">
+                <button
+                    className={`control-btn ${!isProMode ? 'active' : ''}`}
+                    onClick={() => setIsProMode(false)}
+                >
+                    🦄 Kid
+                </button>
+                <button
+                    className={`control-btn ${isProMode ? 'active' : ''}`}
+                    onClick={() => setIsProMode(true)}
+                >
+                    🕶️ Pro
+                </button>
+            </div>
+         </div>
       </div>
+
+      {isProMode && <EffectsRack />}
     </div>
   );
 };

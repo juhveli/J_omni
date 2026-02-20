@@ -14,6 +14,7 @@ class AudioEngine {
             doubleBassSampler: null,
             oboeSampler: null,
             electricGuitarSampler: null,
+            drumSampler: null,
 
             // Synths
             synthPiano: null,
@@ -23,7 +24,7 @@ class AudioEngine {
             synthOboe: null,
             synthElectricGuitar: null,
 
-            // Drums (Synth only for now as primary, samples can be added later)
+            // Drums (Synth fallbacks)
             drumSynths: {
                 kick: null,
                 snare: null,
@@ -37,6 +38,12 @@ class AudioEngine {
         this.initialized = false;
         this.recorder = null;
         this.masterGain = null;
+
+        // Effects
+        this.filter = null;
+        this.delay = null;
+        this.reverb = null;
+        this.analyser = null;
     }
 
     async initialize() {
@@ -45,10 +52,20 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
-        // Create Master Output and Recorder
-        this.masterGain = new Tone.Gain(1).toDestination();
+        // Create Master Output and Effects Chain
+        this.masterGain = new Tone.Gain(1);
+        this.filter = new Tone.Filter(20000, "lowpass");
+        this.delay = new Tone.FeedbackDelay({ delayTime: "8n", feedback: 0.4, wet: 0 });
+        this.reverb = new Tone.Reverb({ decay: 2, wet: 0 });
+        this.analyser = new Tone.Analyser("waveform", 256);
         this.recorder = new Tone.Recorder();
-        this.masterGain.connect(this.recorder);
+
+        // Chain: masterGain -> filter -> delay -> reverb -> Destination
+        this.masterGain.chain(this.filter, this.delay, this.reverb, Tone.Destination);
+
+        // Connect Analyser and Recorder to the end of the chain
+        this.reverb.connect(this.analyser);
+        this.reverb.connect(this.recorder);
 
 
         // --- SYNTHESIZERS ---
@@ -64,8 +81,8 @@ class AudioEngine {
             oscillator: { type: "sawtooth" },
             envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 1 }
         });
-        const guitarFilter = new Tone.Filter(2000, "lowpass").connect(this.masterGain);
-        this.instruments.synthGuitar.connect(guitarFilter);
+        this.guitarFilter = new Tone.Filter(2000, "lowpass").connect(this.masterGain);
+        this.instruments.synthGuitar.connect(this.guitarFilter);
         this.instruments.synthGuitar.volume.value = -5;
 
         // Clarinet Synth (Square-ish)
@@ -91,8 +108,8 @@ class AudioEngine {
              oscillator: { type: "sawtooth" },
              envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.5 }
         });
-        const dist = new Tone.Distortion(0.4).connect(this.masterGain);
-        this.instruments.synthElectricGuitar.connect(dist);
+        this.dist = new Tone.Distortion(0.4).connect(this.masterGain);
+        this.instruments.synthElectricGuitar.connect(this.dist);
 
         // Drum Synths
         this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterGain);
@@ -166,18 +183,41 @@ class AudioEngine {
         };
     }
 
-    _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
+    setEffectValue(effect, value) {
+        if (!this.initialized) return;
+        switch (effect) {
+            case 'reverb':
+                this.reverb.wet.setTargetAtTime(value, Tone.now(), 0.1);
+                break;
+            case 'delay':
+                this.delay.wet.setTargetAtTime(value, Tone.now(), 0.1);
+                break;
+            case 'filter':
+                // Frequency range 200Hz to 20kHz
+                const freq = 200 + (value * 19800);
+                this.filter.frequency.setTargetAtTime(freq, Tone.now(), 0.1);
+                break;
+        }
+    }
 
-        if (delay === 0) {
+    getWaveform() {
+        return this.analyser ? this.analyser.getValue() : new Float32Array(256);
+    }
+
+    setVolume(value) {
+        if (!this.initialized) return;
+        // value 0-100 to decibels. 0 is mute (-Infinity), 100 is 0dB
+        const db = value === 0 ? -Infinity : Tone.gainToDb(value / 100);
+        Tone.getDestination().volume.setTargetAtTime(db, Tone.now(), 0.1);
+    }
+
+    _emitNoteEvent(note, time) {
+        if (time === undefined || time <= Tone.now()) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            setTimeout(() => {
+            Tone.Draw.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
         }
     }
 
@@ -200,7 +240,7 @@ class AudioEngine {
     setInstrument(type) {
         this.currentInstrument = type;
 
-        if (this.soundType !== 'sampled' || type === 'drums') {
+        if (this.soundType !== 'sampled') {
             this._setLoading(false);
             return;
         }
@@ -212,6 +252,7 @@ class AudioEngine {
             case 'doubleBass': this._loadDoubleBassSampler(); break;
             case 'oboe': this._loadOboeSampler(); break;
             case 'electricGuitar': this._loadElectricGuitarSampler(); break;
+            case 'drums': this._loadDrumSampler(); break;
             default: this._setLoading(false);
         }
     }
@@ -251,7 +292,9 @@ class AudioEngine {
     }
 
     _getInstrumentNameFromKey(key) {
-        return key.replace('Sampler', '');
+        let name = key.replace('Sampler', '');
+        if (name === 'drum') name = 'drums'; // Mapping fix
+        return name;
     }
 
     _loadPianoSampler() {
@@ -259,6 +302,21 @@ class AudioEngine {
             urls: { "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", "A4": "A4.mp3" },
             release: 1,
             baseUrl: "https://tonejs.github.io/audio/salamander/",
+            onload: onload,
+            onerror: onerror
+        }).connect(this.masterGain));
+    }
+
+    _loadDrumSampler() {
+        this._handleSamplerLoad('drumSampler', (onload, onerror) => new Tone.Sampler({
+            urls: {
+                "C2": "kick.mp3",
+                "D2": "snare.mp3",
+                "E2": "hihat.mp3",
+                "F2": "crash.mp3",
+                "G2": "tom.mp3"
+            },
+            baseUrl: "https://tonejs.github.io/audio/drum-samples/CR78/",
             onload: onload,
             onerror: onerror
         }).connect(this.masterGain));
@@ -347,6 +405,11 @@ class AudioEngine {
     }
 
     _playDrum(note, time) {
+        if (this.soundType === 'sampled' && this.instruments.drumSampler && this.instruments.drumSampler.loaded) {
+            this.instruments.drumSampler.triggerAttackRelease(note, "8n", time);
+            return;
+        }
+
         // note can be "Kick", "Snare" etc. or mapped note "C2", "D2"
         const drum = note.toLowerCase(); // simplified
 
@@ -357,11 +420,8 @@ class AudioEngine {
         if (note === 'E2') type = 'hihat';
         if (note === 'F2') type = 'crash';
         if (note === 'G2') type = 'tom';
-        // Add more if needed
 
         const synths = this.instruments.drumSynths;
-        // For drums we primarily use Synths as they are reliable.
-        // Samples could be added here if valid URLs are found.
 
         switch (type) {
             case 'kick': synths.kick.triggerAttackRelease("C2", "8n", time); break;
@@ -370,7 +430,6 @@ class AudioEngine {
             case 'crash': synths.crash.triggerAttackRelease("8n", time); break;
             case 'tom': synths.tom.triggerAttackRelease("G2", "8n", time); break;
             default:
-                // Fallback for random notes in drum mode
                 synths.kick.triggerAttackRelease("C2", "8n", time);
         }
     }
