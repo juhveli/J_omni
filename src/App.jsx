@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
+import Visualizer from './components/Visualizer'
 import AudioEngine from './utils/AudioEngine'
 import RecordingStudio from './components/RecordingStudio'
 import MagicGenerator from './components/MagicGenerator'
@@ -10,6 +11,7 @@ function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')
+  const [isProMode, setIsProMode] = useState(false)
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeModal, setActiveModal] = useState(null)
@@ -66,9 +68,12 @@ function App() {
              setScale={setCurrentScale}
              soundType={soundType}
              setSoundType={handleSoundTypeChange}
+             isProMode={isProMode}
+             setIsProMode={setIsProMode}
              onOpenRecording={() => setActiveModal('recording')}
              onOpenMagic={() => setActiveModal('magic')}
            />
+           <Visualizer />
            <InstrumentPad
              currentScale={currentScale}
              currentInstrument={currentInstrument}

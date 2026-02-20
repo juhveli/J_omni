@@ -4,7 +4,7 @@ import { AIService } from '../services/aiService';
 
 const RecordingStudio = ({ onClose }) => {
     const [isRecording, setIsRecording] = useState(false);
-    const [recordedBlob, setRecordedBlob] = useState(null);
+    const [layers, setLayers] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultUrl, setResultUrl] = useState(null);
     const [polishStyle, setPolishStyle] = useState('orchestral');
@@ -12,27 +12,40 @@ const RecordingStudio = ({ onClose }) => {
     const handleRecordToggle = async () => {
         if (isRecording) {
             const blob = await AudioEngine.stopRecording();
-            setRecordedBlob(blob);
+            if (blob && blob.size > 0) {
+                setLayers(prev => [...prev, { id: Date.now(), blob, name: `Layer ${prev.length + 1}` }]);
+            }
             setIsRecording(false);
         } else {
-            setRecordedBlob(null);
             setResultUrl(null);
+            // Play existing layers while recording new one
+            layers.forEach(layer => AudioEngine.playBlob(layer.blob));
             await AudioEngine.startRecording();
             setIsRecording(true);
         }
     };
 
-    const handlePlayRecording = () => {
-        if (recordedBlob) {
-            AudioEngine.playBlob(recordedBlob);
-        }
+    const handlePlayAll = () => {
+        layers.forEach(layer => AudioEngine.playBlob(layer.blob));
+    };
+
+    const clearLayers = () => {
+        setLayers([]);
+        setResultUrl(null);
+    };
+
+    const deleteLayer = (id) => {
+        setLayers(prev => prev.filter(l => l.id !== id));
     };
 
     const handleMagicPolish = async () => {
-        if (!recordedBlob) return;
+        if (layers.length === 0) return;
         setIsProcessing(true);
         try {
-            // Map simple styles to prompt additions
+            // Use the last layer for polish or we'd need to combine them first
+            // For now, let's just use the last one
+            const blob = layers[layers.length - 1].blob;
+
             const prompts = {
                 orchestral: "Make it sound like a grand orchestra, cinematic, epic",
                 rock: "Add electric guitars and heavy drums, rock style",
@@ -41,8 +54,7 @@ const RecordingStudio = ({ onClose }) => {
             };
 
             const prompt = prompts[polishStyle] || "Polish this song";
-
-            const result = await AIService.editSong(recordedBlob, prompt, "polish");
+            const result = await AIService.editSong(blob, prompt, "polish");
 
             if (result.success || result.mock) {
                  setResultUrl(result.audio_url);
@@ -61,26 +73,41 @@ const RecordingStudio = ({ onClose }) => {
         <div className="recording-studio-overlay">
             <div className="studio-panel">
                 <button className="close-btn" onClick={onClose}>×</button>
-                <h2>🎙️ Recording Studio</h2>
+                <h2>🎙️ Looper Studio</h2>
 
                 <div className="controls-area">
                     <button
                         className={`record-btn ${isRecording ? 'recording' : ''}`}
                         onClick={handleRecordToggle}
                     >
-                        {isRecording ? '⬛ Stop' : '🔴 Record'}
+                        {isRecording ? '⬛ Stop' : '🔴 Add Layer'}
                     </button>
 
-                    {recordedBlob && !isRecording && (
-                        <button className="play-btn" onClick={handlePlayRecording}>
-                            ▶️ Play Back
-                        </button>
+                    {layers.length > 0 && !isRecording && (
+                        <div className="action-btns">
+                            <button className="play-btn" onClick={handlePlayAll}>
+                                ▶️ Play All
+                            </button>
+                            <button className="clear-btn" onClick={clearLayers}>
+                                🗑️ Clear All
+                            </button>
+                        </div>
                     )}
                 </div>
 
-                {recordedBlob && !isRecording && (
+                <div className="layers-list">
+                    {layers.map((layer, index) => (
+                        <div key={layer.id} className="layer-item">
+                            <span>🌈 {layer.name}</span>
+                            <button onClick={() => deleteLayer(layer.id)}>×</button>
+                        </div>
+                    ))}
+                </div>
+
+                {layers.length > 0 && !isRecording && (
                     <div className="magic-area">
                         <h3>✨ Add Magic ✨</h3>
+                        <p style={{fontSize: '0.8rem', opacity: 0.8}}>(Polishes your last layer)</p>
                         <div className="magic-controls">
                             <select value={polishStyle} onChange={(e) => setPolishStyle(e.target.value)}>
                                 <option value="orchestral">🎻 Orchestral</option>
@@ -144,6 +171,29 @@ const RecordingStudio = ({ onClose }) => {
                 .play-btn {
                     background: #44ff44; color: black; padding: 0.5rem 1rem; border-radius: 10px; border: none; cursor: pointer;
                     font-weight: bold;
+                }
+                .clear-btn {
+                    background: #ffaa44; color: black; padding: 0.5rem 1rem; border-radius: 10px; border: none; cursor: pointer;
+                    font-weight: bold; margin-left: 10px;
+                }
+                .layers-list {
+                    margin: 1rem 0;
+                    max-height: 150px;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                }
+                .layer-item {
+                    background: rgba(255,255,255,0.1);
+                    padding: 0.5rem 1rem;
+                    border-radius: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .layer-item button {
+                    background: none; border: none; color: #ff4444; font-size: 1.2rem; cursor: pointer;
                 }
                 .magic-area {
                     margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #444;

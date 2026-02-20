@@ -19,36 +19,33 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
   };
 
   const handleInteraction = () => {
-    if (!forceActive) onPlay(note); // Only play if not already playing via prop
+    // If this is called from forceActive (keyboard/auto), we assume onPlay was already called or isn't needed here
+    // But if called from UI interaction, we need to call onPlay.
     setIsActive(true);
     addSparkle();
     setTimeout(() => setIsActive(false), 200);
   };
 
-  // Handle external forceActive (keyboard)
+  // Handle external forceActive (keyboard / magic melody)
   useEffect(() => {
     if (forceActive) {
       handleInteraction();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
 
   const handlePointerDown = (e) => {
     e.preventDefault();
     onPlay(note);
-    setIsActive(true);
-    addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+    handleInteraction();
   };
 
-  // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
-  const handleClick = () => {
-     // Usually covered by pointerdown, but good for a11y keyboard triggering if we separate handlers
-     // Keyboard 'Enter' triggers onClick
-     onPlay(note);
-     setIsActive(true);
-     addSparkle();
-     setTimeout(() => setIsActive(false), 200);
+  const handleClick = (e) => {
+     // Only trigger if it's a keyboard 'click' (detail === 0)
+     // mouse/touch clicks are handled by pointerdown + preventDefault
+     if (e.detail === 0) {
+        onPlay(note);
+        handleInteraction();
+     }
   };
 
   return (

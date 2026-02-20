@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -72,30 +72,45 @@ const KEY_MAPPINGS = {
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNote, setActiveNote] = useState(null);
+  const timersRef = useRef([]);
 
-  let notes;
-
-  if (currentInstrument === 'drums') {
-      notes = DRUMS;
-  } else {
-      notes = SCALES[currentScale] || SCALES.simple;
-  }
+  const notes = useMemo(() => {
+    if (currentInstrument === 'drums') {
+        return DRUMS;
+    }
+    return SCALES[currentScale] || SCALES.simple;
+  }, [currentInstrument, currentScale]);
 
   const handlePlay = useCallback((note) => {
     AudioEngine.playNote(note);
   }, []);
 
   useEffect(() => {
-    // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
+    // Subscribe to AudioEngine note events (visual feedback for Magic Melody / Tone.Draw)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
         setActiveNote(note);
         // Reset after short delay to simulate press release
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             setActiveNote(prev => prev === note ? null : prev);
         }, 300);
+        timersRef.current.push(timer);
     });
-    return unsubscribe;
+
+    return () => {
+        unsubscribe();
+        timersRef.current.forEach(clearTimeout);
+        timersRef.current = [];
+    };
   }, []);
+
+  const getShortcut = useCallback((index) => {
+      if (currentInstrument === 'drums' || currentScale === 'simple') {
+          return KEY_MAPPINGS.simple[index];
+      } else if (currentScale === 'full') {
+           return Object.keys(KEY_MAPPINGS.full).find(key => KEY_MAPPINGS.full[key] === index);
+      }
+      return null;
+  }, [currentInstrument, currentScale]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -128,17 +143,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
-
-  const getShortcut = (index) => {
-      if (currentInstrument === 'drums' || currentScale === 'simple') {
-          return KEY_MAPPINGS.simple[index];
-      } else if (currentScale === 'full') {
-           // Invert the object to find key by value
-           return Object.keys(KEY_MAPPINGS.full).find(key => KEY_MAPPINGS.full[key] === index);
-      }
-      return null;
-  };
+  }, [notes, handlePlay, currentInstrument, currentScale]);
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
