@@ -37,6 +37,16 @@ class AudioEngine {
         this.initialized = false;
         this.recorder = null;
         this.masterGain = null;
+        this.globalVolume = 80;
+        this.instrumentVolumes = {
+            piano: 80,
+            guitar: 80,
+            clarinet: 80,
+            doubleBass: 80,
+            oboe: 80,
+            electricGuitar: 80,
+            drums: 80
+        };
     }
 
     async initialize() {
@@ -47,8 +57,13 @@ class AudioEngine {
 
         // Create Master Output and Recorder
         this.masterGain = new Tone.Gain(1).toDestination();
+        this.setVolume(this.globalVolume); // Initialize volume
         this.recorder = new Tone.Recorder();
         this.masterGain.connect(this.recorder);
+
+        // Visualizer Analyzer
+        this.analyser = new Tone.Analyser("waveform", 256);
+        this.masterGain.connect(this.analyser);
 
 
         // --- SYNTHESIZERS ---
@@ -167,17 +182,14 @@ class AudioEngine {
     }
 
     _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
-
-        if (delay === 0) {
+        // If time is undefined, we are playing immediately, emit immediately
+        if (time === undefined) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            setTimeout(() => {
+            // Schedule visual feedback synced precisely with the audio clock
+            Tone.Draw.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
         }
     }
 
@@ -185,6 +197,57 @@ class AudioEngine {
         if (this.isLoading === loading) return;
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
+    }
+
+    setVolume(value) {
+        this.globalVolume = value;
+        if (!this.initialized) return;
+
+        // Map 0-100 to decibels for tone.js (-60 to 0)
+        // If 0, mute it completely
+        if (value === 0) {
+            Tone.getDestination().volume.value = -Infinity;
+        } else {
+            // Linear mapping from 1-100 to -60 to 0 dB
+            const db = (value / 100) * 60 - 60;
+            Tone.getDestination().volume.value = db;
+        }
+    }
+
+    setInstrumentVolume(instrument, value) {
+        this.instrumentVolumes[instrument] = value;
+        if (!this.initialized) return;
+
+        // Note: For simplicity, we calculate a volume factor (0 to 1 scale roughly)
+        // and apply it dynamically during play time or to the instrument's specific output volume node.
+        // Since we are using shared samplers/synths, we will apply the volume directly to them if they are the current instrument
+        // To be thorough, we can update the volume of the specific nodes.
+
+        const db = value === 0 ? -Infinity : (value / 100) * 60 - 60; // Map 0-100 to -60 to 0 dB
+
+        // Find synth/sampler keys corresponding to instrument
+        const synthKey = 'synth' + instrument.charAt(0).toUpperCase() + instrument.slice(1);
+        const samplerKey = instrument + 'Sampler';
+
+        if (instrument === 'drums') {
+            Object.values(this.instruments.drumSynths).forEach(synth => {
+                if (synth && synth.volume) synth.volume.value = db;
+            });
+        } else {
+            const synth = this.instruments[synthKey];
+            const sampler = this.instruments[samplerKey];
+            if (synth && synth.volume) synth.volume.value = db;
+            if (sampler && sampler.volume) sampler.volume.value = db;
+        }
+    }
+
+    getInstrumentVolume(instrument) {
+        return this.instrumentVolumes[instrument] !== undefined ? this.instrumentVolumes[instrument] : 80;
+    }
+
+    getVisualizerData() {
+        if (!this.initialized || !this.analyser) return new Float32Array(256);
+        return this.analyser.getValue();
     }
 
     setSoundType(type) {

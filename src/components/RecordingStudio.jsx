@@ -28,6 +28,19 @@ const RecordingStudio = ({ onClose }) => {
         }
     };
 
+    const handleDownload = () => {
+        if (!recordedBlob) return;
+        const url = URL.createObjectURL(recordedBlob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'unicorn_music_recording.webm'; // Default Tone.Recorder format
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    };
+
     const handleMagicPolish = async () => {
         if (!recordedBlob) return;
         setIsProcessing(true);
@@ -72,9 +85,14 @@ const RecordingStudio = ({ onClose }) => {
                     </button>
 
                     {recordedBlob && !isRecording && (
-                        <button className="play-btn" onClick={handlePlayRecording}>
-                            ▶️ Play Back
-                        </button>
+                        <>
+                            <button className="play-btn" onClick={handlePlayRecording}>
+                                ▶️ Play Back
+                            </button>
+                            <button className="download-btn" onClick={handleDownload}>
+                                💾 Save
+                            </button>
+                        </>
                     )}
                 </div>
 
@@ -143,7 +161,11 @@ const RecordingStudio = ({ onClose }) => {
                 }
                 .play-btn {
                     background: #44ff44; color: black; padding: 0.5rem 1rem; border-radius: 10px; border: none; cursor: pointer;
-                    font-weight: bold;
+                    font-weight: bold; margin: 0.5rem;
+                }
+                .download-btn {
+                    background: #44aaff; color: white; padding: 0.5rem 1rem; border-radius: 10px; border: none; cursor: pointer;
+                    font-weight: bold; margin: 0.5rem;
                 }
                 .magic-area {
                     margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #444;

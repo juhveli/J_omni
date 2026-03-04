@@ -4,6 +4,7 @@ import InstrumentPad from './components/InstrumentPad'
 import AudioEngine from './utils/AudioEngine'
 import RecordingStudio from './components/RecordingStudio'
 import MagicGenerator from './components/MagicGenerator'
+import Visualizer from './components/Visualizer'
 import { INSTRUMENTS } from './constants'
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
              onOpenRecording={() => setActiveModal('recording')}
              onOpenMagic={() => setActiveModal('magic')}
            />
+           <Visualizer />
            <InstrumentPad
              currentScale={currentScale}
              currentInstrument={currentInstrument}
