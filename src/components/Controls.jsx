@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, onOpenRecording, onOpenMagic }) => {
+  const [volume, setVolume] = useState(80);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const [instrumentVolume, setInstrumentVolume] = useState(80);
+
+  // When instrument changes, update the local instrument volume state
+  React.useEffect(() => {
+    setInstrumentVolume(AudioEngine.getInstrumentVolume(currentInstrument));
+  }, [currentInstrument]);
+
+  const handleVolumeChange = (e) => {
+    const val = Number(e.target.value);
+    setVolume(val);
+    AudioEngine.setVolume(val);
+  };
+
+  const handleInstrumentVolumeChange = (e) => {
+    const val = Number(e.target.value);
+    setInstrumentVolume(val);
+    AudioEngine.setInstrumentVolume(currentInstrument, val);
   };
 
   return (
@@ -84,6 +104,31 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+      </div>
+
+      <div className="settings-row" style={{ marginTop: '1rem', justifyContent: 'center', gap: '2rem' }}>
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h3>Master Vol</h3>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            onChange={handleVolumeChange}
+            style={{ width: '150px' }}
+          />
+        </div>
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h3>{INSTRUMENTS.find(i => i.id === currentInstrument)?.label} Vol</h3>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={instrumentVolume}
+            onChange={handleInstrumentVolumeChange}
+            style={{ width: '150px' }}
+          />
+        </div>
       </div>
     </div>
   );

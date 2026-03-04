@@ -70,6 +70,11 @@ const KEY_MAPPINGS = {
     }
 };
 
+const REVERSE_KEY_MAPPINGS_FULL = Object.keys(KEY_MAPPINGS.full).reduce((acc, key) => {
+    acc[KEY_MAPPINGS.full[key]] = key;
+    return acc;
+}, {});
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNote, setActiveNote] = useState(null);
 
@@ -134,8 +139,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       if (currentInstrument === 'drums' || currentScale === 'simple') {
           return KEY_MAPPINGS.simple[index];
       } else if (currentScale === 'full') {
-           // Invert the object to find key by value
-           return Object.keys(KEY_MAPPINGS.full).find(key => KEY_MAPPINGS.full[key] === index);
+           return REVERSE_KEY_MAPPINGS_FULL[index];
       }
       return null;
   };
