@@ -21,7 +21,7 @@ export const AIService = {
             });
             if (!res.ok) throw new Error("Generation failed");
             return await res.json();
-        } catch (e) {
+        } catch {
              console.warn("AI Generation unavailable, using fallback mock.");
              return { success: false, message: "Magic Server not found! (This feature needs a backend)" };
         }
@@ -41,7 +41,7 @@ export const AIService = {
             });
             if (!res.ok) throw new Error("Editing failed");
             return await res.json();
-        } catch (e) {
+        } catch {
              console.warn("AI Edit unavailable, using fallback mock.");
              return { success: false, message: "Magic Server not found! (This feature needs a backend)" };
         }

@@ -38,6 +38,9 @@ class AudioEngine {
         this.recorder = null;
         this.masterGain = null;
         this.globalVolume = 80;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.bpm = 120;
         this.instrumentVolumes = {
             piano: 80,
             guitar: 80,
@@ -109,6 +112,22 @@ class AudioEngine {
         const dist = new Tone.Distortion(0.4).connect(this.masterGain);
         this.instruments.synthElectricGuitar.connect(dist);
 
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+        }).connect(this.masterGain);
+
+        // Metronome Loop
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Stronger beat on the 1
+            const isDownbeat = (Tone.Transport.position.split(':')[1] === '0' && Tone.Transport.position.split(':')[2].split('.')[0] === '0');
+            this.metronomeSynth.triggerAttackRelease(isDownbeat ? "C3" : "C2", "16n", time);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.bpm;
+
         // Drum Synths
         this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterGain);
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
@@ -141,6 +160,26 @@ class AudioEngine {
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    startMetronome() {
+        if (!this.initialized) return;
+        this.metronomeLoop.start(0);
+        Tone.Transport.start();
+    }
+
+    stopMetronome() {
+        if (!this.initialized) return;
+        this.metronomeLoop.stop();
+        // Only stop transport if we aren't using it for other things that need to keep running,
+        // but for now metronome is the main transport user
+        Tone.Transport.stop();
+    }
+
+    setBpm(bpm) {
+        this.bpm = bpm;
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
     }
 
     async startRecording() {
@@ -203,13 +242,15 @@ class AudioEngine {
         this.globalVolume = value;
         if (!this.initialized) return;
 
-        // Map 0-100 to decibels for tone.js (-60 to 0)
+        // Map 0-100 to decibels using logarithmic scaling for more natural volume curve
         // If 0, mute it completely
         if (value === 0) {
             Tone.getDestination().volume.value = -Infinity;
         } else {
-            // Linear mapping from 1-100 to -60 to 0 dB
-            const db = (value / 100) * 60 - 60;
+            // Volume factor between 0 and 1
+            const gain = value / 100;
+            // Tone.gainToDb converts linear gain to decibels (-Infinity for 0, 0 for 1)
+            const db = Tone.gainToDb(gain);
             Tone.getDestination().volume.value = db;
         }
     }
@@ -218,12 +259,9 @@ class AudioEngine {
         this.instrumentVolumes[instrument] = value;
         if (!this.initialized) return;
 
-        // Note: For simplicity, we calculate a volume factor (0 to 1 scale roughly)
-        // and apply it dynamically during play time or to the instrument's specific output volume node.
-        // Since we are using shared samplers/synths, we will apply the volume directly to them if they are the current instrument
-        // To be thorough, we can update the volume of the specific nodes.
-
-        const db = value === 0 ? -Infinity : (value / 100) * 60 - 60; // Map 0-100 to -60 to 0 dB
+        // Apply volume directly to the instrument nodes
+        const gain = value / 100;
+        const db = value === 0 ? -Infinity : Tone.gainToDb(gain);
 
         // Find synth/sampler keys corresponding to instrument
         const synthKey = 'synth' + instrument.charAt(0).toUpperCase() + instrument.slice(1);
@@ -280,6 +318,7 @@ class AudioEngine {
     }
 
     // --- Sampler Loaders ---
+    // TODO: Support uploading custom SoundFonts for samplers
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
@@ -376,15 +415,31 @@ class AudioEngine {
     playMelody(melody) {
         if (!this.initialized) return;
 
-        const now = Tone.now();
+        // Cancel previously scheduled events using Tone.Transport
+        // Since we use Tone.now(), we need to clear previous events if we want to prevent overlap
+        // We will store current scheduled ids in an array and cancel them
+        if (this.currentMelodyIds) {
+            this.currentMelodyIds.forEach(id => Tone.Transport.clear(id));
+        }
+        this.currentMelodyIds = [];
+
+        // Temporarily ensure Transport is started if not already
+        if (Tone.Transport.state !== 'started') {
+             Tone.Transport.start();
+        }
+
         let cumulativeTime = 0;
 
         melody.forEach(item => {
              const duration = item.duration || "8n";
              const note = item.note;
 
-             // Schedule note
-             this.playNote(note, duration, now + cumulativeTime);
+             // Use Tone.Transport to schedule, so we can clear them easily
+             const id = Tone.Transport.schedule((time) => {
+                  this.playNote(note, duration, time);
+             }, "+" + cumulativeTime);
+
+             this.currentMelodyIds.push(id);
 
              cumulativeTime += Tone.Time(duration).toSeconds();
         });

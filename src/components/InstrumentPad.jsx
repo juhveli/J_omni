@@ -104,6 +104,10 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore key events if the user is typing in an input or textarea
+      const target = e.target.tagName.toLowerCase();
+      if (target === 'input' || target === 'textarea') return;
+
       if (e.repeat) return;
 
       const key = e.key.toLowerCase();
@@ -133,7 +137,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handlePlay]);
 
   const getShortcut = (index) => {
       if (currentInstrument === 'drums' || currentScale === 'simple') {
