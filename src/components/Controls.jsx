@@ -10,6 +10,8 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
   };
 
   const [instrumentVolume, setInstrumentVolume] = useState(80);
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   // When instrument changes, update the local instrument volume state
   React.useEffect(() => {
@@ -26,6 +28,22 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
     const val = Number(e.target.value);
     setInstrumentVolume(val);
     AudioEngine.setInstrumentVolume(currentInstrument, val);
+  };
+
+  const toggleMetronome = () => {
+    if (isMetronomePlaying) {
+      AudioEngine.stopMetronome();
+      setIsMetronomePlaying(false);
+    } else {
+      AudioEngine.startMetronome();
+      setIsMetronomePlaying(true);
+    }
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = Number(e.target.value);
+    setBpm(newBpm);
+    AudioEngine.setBpm(newBpm);
   };
 
   return (
@@ -102,11 +120,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={onOpenMagic}>
                     ✨ AI Maker
                 </button>
+                <button
+                  className={`control-btn ${isMetronomePlaying ? 'active' : ''}`}
+                  onClick={toggleMetronome}
+                  aria-pressed={isMetronomePlaying}
+                >
+                  ⏱️ Metronome
+                </button>
             </div>
          </div>
       </div>
 
       <div className="settings-row" style={{ marginTop: '1rem', justifyContent: 'center', gap: '2rem' }}>
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h3>Tempo ({bpm} BPM)</h3>
+          <input
+            type="range"
+            min="60"
+            max="200"
+            value={bpm}
+            onChange={handleBpmChange}
+            style={{ width: '150px' }}
+          />
+        </div>
         <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h3>Master Vol</h3>
           <input

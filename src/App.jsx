@@ -8,6 +8,7 @@ import Visualizer from './components/Visualizer'
 import { INSTRUMENTS } from './constants'
 
 function App() {
+  // TODO: Add a Piano Roll editor view for advanced users
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')
