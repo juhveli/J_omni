@@ -35,7 +35,12 @@ const RecordingStudio = ({ onClose }) => {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = 'unicorn_music_recording.webm'; // Default Tone.Recorder format
+
+        // Generate timestamp
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-');
+
+        a.download = `unicorn_music_recording_${timestamp}.webm`; // Default Tone.Recorder format
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
