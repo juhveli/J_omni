@@ -159,7 +159,50 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // Initialize MIDI
+        this._initMIDI();
+
         this.initialized = true;
+    }
+
+    // TODO: Add configurable audio effects (e.g., reverb, delay) to the master output.
+
+    _initMIDI() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI Access Granted");
+                    for (let input of midiAccess.inputs.values()) {
+                        input.onmidimessage = this._handleMIDIMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.state === 'connected' && e.port.type === 'input') {
+                            e.port.onmidimessage = this._handleMIDIMessage.bind(this);
+                        }
+                    };
+                },
+                () => console.warn("MIDI Access Denied or failed")
+            );
+        } else {
+            console.warn("Web MIDI API not supported in this browser");
+        }
+    }
+
+    _handleMIDIMessage(message) {
+        if (!this.initialized) return;
+        const [status, data1, data2] = message.data;
+        // Note On message (status 144-159)
+        if (status >= 144 && status <= 159 && data2 > 0) {
+            const noteName = this._midiToNoteName(data1);
+            this.playNote(noteName);
+        }
+    }
+
+    _midiToNoteName(midiNote) {
+        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const octave = Math.floor(midiNote / 12) - 1;
+        const note = notes[midiNote % 12];
+        return `${note}${octave}`;
     }
 
     startMetronome() {

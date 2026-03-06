@@ -76,6 +76,7 @@ const REVERSE_KEY_MAPPINGS_FULL = Object.keys(KEY_MAPPINGS.full).reduce((acc, ke
 }, {});
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  // TODO: Support multi-touch for playing chords on mobile devices.
   const [activeNote, setActiveNote] = useState(null);
 
   let notes;

@@ -10,7 +10,10 @@ const MagicGenerator = ({ onClose }) => {
     const moods = ["Happy", "Sad", "Fast", "Slow", "Space", "Nature"];
 
     const addMood = (mood) => {
-        setPrompt(prev => prev ? `${prev}, ${mood}` : mood);
+        setPrompt(prev => {
+            if (prev.includes(mood)) return prev;
+            return prev ? `${prev}, ${mood}` : mood;
+        });
     };
 
     const handleGenerate = async () => {
