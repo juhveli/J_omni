@@ -12,6 +12,8 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
   const [instrumentVolume, setInstrumentVolume] = useState(80);
   const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
+  const [reverbWet, setReverbWet] = useState(0);
+  const [delayWet, setDelayWet] = useState(0);
 
   // When instrument changes, update the local instrument volume state
   React.useEffect(() => {
@@ -46,6 +48,18 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
     const newBpm = Number(e.target.value);
     setBpm(newBpm);
     AudioEngine.setBpm(newBpm);
+  };
+
+  const handleReverbChange = (e) => {
+    const val = Number(e.target.value);
+    setReverbWet(val);
+    AudioEngine.setEffectWetness('reverb', val / 100);
+  };
+
+  const handleDelayChange = (e) => {
+    const val = Number(e.target.value);
+    setDelayWet(val);
+    AudioEngine.setEffectWetness('delay', val / 100);
   };
 
   return (
@@ -133,6 +147,7 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
          </div>
       </div>
 
+      {/* TODO: Implement visual beat indicators for the Metronome */}
       <div className="settings-row" style={{ marginTop: '1rem', justifyContent: 'center', gap: '2rem' }}>
         <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h3>Tempo ({bpm} BPM)</h3>
@@ -165,6 +180,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             value={instrumentVolume}
             onChange={handleInstrumentVolumeChange}
             style={{ width: '150px' }}
+          />
+        </div>
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h3>Reverb</h3>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={reverbWet}
+            onChange={handleReverbChange}
+            style={{ width: '100px' }}
+          />
+        </div>
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h3>Delay</h3>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={delayWet}
+            onChange={handleDelayChange}
+            style={{ width: '100px' }}
           />
         </div>
       </div>
