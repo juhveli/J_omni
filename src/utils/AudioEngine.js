@@ -59,14 +59,28 @@ class AudioEngine {
         console.log("Audio Engine Started");
 
         // Create Master Output and Recorder
-        this.masterGain = new Tone.Gain(1).toDestination();
+        this.masterGain = new Tone.Gain(1);
         this.setVolume(this.globalVolume); // Initialize volume
+
+        // Configurable Effects Rack
+        this.filter = new Tone.Filter(20000, "lowpass");
+        this.delay = new Tone.FeedbackDelay("8n", 0.5);
+        this.delay.wet.value = 0; // Off by default
+        this.reverb = new Tone.Reverb(2);
+        this.reverb.wet.value = 0; // Off by default
+
+        // Wait for Reverb to be ready
+        await this.reverb.ready;
+
+        // Routing: masterGain -> filter -> delay -> reverb -> Destination / Recorder / Analyser
+        this.masterGain.chain(this.filter, this.delay, this.reverb, Tone.Destination);
+
         this.recorder = new Tone.Recorder();
-        this.masterGain.connect(this.recorder);
+        this.reverb.connect(this.recorder);
 
         // Visualizer Analyzer
         this.analyser = new Tone.Analyser("waveform", 256);
-        this.masterGain.connect(this.analyser);
+        this.reverb.connect(this.analyser);
 
 
         // --- SYNTHESIZERS ---
@@ -165,7 +179,23 @@ class AudioEngine {
         this.initialized = true;
     }
 
-    // TODO: Add configurable audio effects (e.g., reverb, delay) to the master output.
+    // Effects Rack Methods
+    setFilterFrequency(freq) {
+        if (!this.initialized || !this.filter) return;
+        this.filter.frequency.rampTo(freq, 0.1);
+    }
+
+    setDelayWet(wet) {
+        if (!this.initialized || !this.delay) return;
+        this.delay.wet.rampTo(wet, 0.1);
+    }
+
+    setReverbWet(wet) {
+        if (!this.initialized || !this.reverb) return;
+        this.reverb.wet.rampTo(wet, 0.1);
+    }
+
+    // TODO: Implement a custom sequencer for programming drum beats.
 
     _initMIDI() {
         if (navigator.requestMIDIAccess) {

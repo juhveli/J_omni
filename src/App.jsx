@@ -10,6 +10,7 @@ import { INSTRUMENTS } from './constants'
 function App() {
   // TODO: Add a Piano Roll editor view for advanced users
   // TODO: Implement user authentication to save user preferences and recordings.
+  // TODO: Implement user profiles for saving custom effects rack presets.
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')

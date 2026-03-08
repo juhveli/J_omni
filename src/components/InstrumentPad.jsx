@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -78,6 +78,7 @@ const REVERSE_KEY_MAPPINGS_FULL = Object.keys(KEY_MAPPINGS.full).reduce((acc, ke
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   // TODO: Support multi-touch for playing chords on mobile devices.
   const [activeNote, setActiveNote] = useState(null);
+  const timersRef = useRef({});
 
   let notes;
 
@@ -95,8 +96,14 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
         setActiveNote(note);
+
+        // Clear any existing timer for this note to prevent premature visual reset
+        if (timersRef.current[note]) {
+            clearTimeout(timersRef.current[note]);
+        }
+
         // Reset after short delay to simulate press release
-        setTimeout(() => {
+        timersRef.current[note] = setTimeout(() => {
             setActiveNote(prev => prev === note ? null : prev);
         }, 300);
     });
