@@ -58,15 +58,21 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
-        // Create Master Output and Recorder
-        this.masterGain = new Tone.Gain(1).toDestination();
+        // Effects
+        this.reverb = new Tone.Reverb({ decay: 2.5, preDelay: 0.1, wet: 0 });
+        this.delay = new Tone.FeedbackDelay({ delayTime: "8n", feedback: 0.3, wet: 0 });
+
+        // Create Master Output, Effects Chain, and Recorder
+        this.masterGain = new Tone.Gain(1);
+        this.masterGain.chain(this.delay, this.reverb, Tone.getDestination());
+
         this.setVolume(this.globalVolume); // Initialize volume
         this.recorder = new Tone.Recorder();
-        this.masterGain.connect(this.recorder);
+        this.reverb.connect(this.recorder); // Record wet signal
 
         // Visualizer Analyzer
         this.analyser = new Tone.Analyser("waveform", 256);
-        this.masterGain.connect(this.analyser);
+        this.reverb.connect(this.analyser);
 
 
         // --- SYNTHESIZERS ---
@@ -165,7 +171,14 @@ class AudioEngine {
         this.initialized = true;
     }
 
-    // TODO: Add configurable audio effects (e.g., reverb, delay) to the master output.
+    setEffectWetness(effect, value) {
+        if (!this.initialized) return;
+        if (effect === 'reverb' && this.reverb) {
+            this.reverb.wet.value = value;
+        } else if (effect === 'delay' && this.delay) {
+            this.delay.wet.value = value;
+        }
+    }
 
     _initMIDI() {
         if (navigator.requestMIDIAccess) {
@@ -290,8 +303,8 @@ class AudioEngine {
         if (value === 0) {
             Tone.getDestination().volume.value = -Infinity;
         } else {
-            // Volume factor between 0 and 1
-            const gain = value / 100;
+            // Volume factor between 0 and 1, squared for natural exponential curve
+            const gain = Math.pow(value / 100, 2);
             // Tone.gainToDb converts linear gain to decibels (-Infinity for 0, 0 for 1)
             const db = Tone.gainToDb(gain);
             Tone.getDestination().volume.value = db;
@@ -303,7 +316,7 @@ class AudioEngine {
         if (!this.initialized) return;
 
         // Apply volume directly to the instrument nodes
-        const gain = value / 100;
+        const gain = Math.pow(value / 100, 2);
         const db = value === 0 ? -Infinity : Tone.gainToDb(gain);
 
         // Find synth/sampler keys corresponding to instrument

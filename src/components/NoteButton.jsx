@@ -1,9 +1,10 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import Sparkle from './Sparkle';
 
 const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, isSharp }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
+  const timeoutRef = useRef(null);
 
   const addSparkle = () => {
     const id = Date.now();
@@ -22,7 +23,8 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
     if (!forceActive) onPlay(note); // Only play if not already playing via prop
     setIsActive(true);
     addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setIsActive(false), 200);
   };
 
   // Handle external forceActive (keyboard)
@@ -38,7 +40,8 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
     onPlay(note);
     setIsActive(true);
     addSparkle();
-    setTimeout(() => setIsActive(false), 200);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setIsActive(false), 200);
   };
 
   // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
@@ -48,7 +51,8 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
      onPlay(note);
      setIsActive(true);
      addSparkle();
-     setTimeout(() => setIsActive(false), 200);
+     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+     timeoutRef.current = setTimeout(() => setIsActive(false), 200);
   };
 
   return (

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 
 const Visualizer = () => {
+  // TODO: Add a resize event listener to dynamically resize the canvas and its context
   const canvasRef = useRef(null);
 
   useEffect(() => {
