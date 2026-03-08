@@ -32,6 +32,8 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
     AudioEngine.setInstrumentVolume(currentInstrument, val);
   };
 
+  // TODO: Add support for changing synthesizer waveforms dynamically in Pro Mode.
+
   const toggleMetronome = () => {
     if (isMetronomePlaying) {
       AudioEngine.stopMetronome();

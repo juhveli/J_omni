@@ -67,6 +67,20 @@ class AudioEngine {
         this.masterGain.chain(this.delay, this.reverb, Tone.getDestination());
 
         this.setVolume(this.globalVolume); // Initialize volume
+
+        // Configurable Effects Rack
+        this.filter = new Tone.Filter(20000, "lowpass");
+        this.delay = new Tone.FeedbackDelay("8n", 0.5);
+        this.delay.wet.value = 0; // Off by default
+        this.reverb = new Tone.Reverb(2);
+        this.reverb.wet.value = 0; // Off by default
+
+        // Wait for Reverb to be ready
+        await this.reverb.ready;
+
+        // Routing: masterGain -> filter -> delay -> reverb -> Destination / Recorder / Analyser
+        this.masterGain.chain(this.filter, this.delay, this.reverb, Tone.Destination);
+
         this.recorder = new Tone.Recorder();
         this.reverb.connect(this.recorder); // Record wet signal
 
