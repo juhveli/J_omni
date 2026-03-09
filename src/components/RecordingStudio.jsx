@@ -30,6 +30,7 @@ const RecordingStudio = ({ onClose }) => {
 
     const handleDownload = () => {
         // TODO: Implement cloud saving of recorded sessions
+        // TODO: Allow trimming/editing of recorded audio before saving.
         if (!recordedBlob) return;
         const url = URL.createObjectURL(recordedBlob);
         const a = document.createElement('a');

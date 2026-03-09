@@ -14,6 +14,15 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
   const [bpm, setBpm] = useState(120);
   const [reverbWet, setReverbWet] = useState(0);
   const [delayWet, setDelayWet] = useState(0);
+  const [metronomeBeat, setMetronomeBeat] = useState(null); // null, 'downbeat', 'offbeat'
+
+  React.useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome((isDownbeat) => {
+      setMetronomeBeat(isDownbeat ? 'downbeat' : 'offbeat');
+      setTimeout(() => setMetronomeBeat(null), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   // When instrument changes, update the local instrument volume state
   React.useEffect(() => {
@@ -138,14 +147,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                   className={`control-btn ${isMetronomePlaying ? 'active' : ''}`}
                   onClick={toggleMetronome}
                   aria-pressed={isMetronomePlaying}
+                  style={{ position: 'relative' }}
                 >
                   ⏱️ Metronome
+                  {isMetronomePlaying && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '5px',
+                        right: '5px',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: metronomeBeat === 'downbeat' ? '#ff00ff' : metronomeBeat === 'offbeat' ? '#00ffff' : 'transparent',
+                        transition: 'background-color 0.1s'
+                      }}
+                    />
+                  )}
                 </button>
             </div>
          </div>
       </div>
 
-      {/* TODO: Implement visual beat indicators for the Metronome */}
       <div className="settings-row" style={{ marginTop: '1rem', justifyContent: 'center', gap: '2rem' }}>
         <div className="control-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h3>Tempo ({bpm} BPM)</h3>
