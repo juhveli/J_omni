@@ -2,14 +2,23 @@ import React, { useEffect, useRef } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 
 const Visualizer = () => {
-  // TODO: Add a resize event listener to dynamically resize the canvas and its context
+  // TODO: Add support for different visualizer styles (e.g., bars, circular).
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     let animationFrameId;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d');
+
+    const handleResize = () => {
+      canvas.width = container.clientWidth;
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial sizing
 
     const draw = () => {
       animationFrameId = requestAnimationFrame(draw);
@@ -51,15 +60,15 @@ const Visualizer = () => {
     draw();
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return (
-    <div className="visualizer-container" style={{ margin: '1rem auto', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
+    <div ref={containerRef} className="visualizer-container" style={{ margin: '1rem auto', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
       <canvas
         ref={canvasRef}
-        width={400}
         height={100}
         style={{
           background: '#000',

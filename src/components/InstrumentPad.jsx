@@ -78,7 +78,8 @@ const REVERSE_KEY_MAPPINGS_FULL = Object.keys(KEY_MAPPINGS.full).reduce((acc, ke
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   // TODO: Support multi-touch for playing chords on mobile devices.
   // TODO: Implement glissando (slide to play) support across note buttons
-  const [activeNote, setActiveNote] = useState(null);
+  // TODO: Add support for customizing key mappings via UI.
+  const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
 
@@ -95,10 +96,18 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
-        setActiveNote(note);
+        setActiveNotes(prev => {
+            const next = new Set(prev);
+            next.add(note);
+            return next;
+        });
         // Reset after short delay to simulate press release
         setTimeout(() => {
-            setActiveNote(prev => prev === note ? null : prev);
+            setActiveNotes(prev => {
+                const next = new Set(prev);
+                next.delete(note);
+                return next;
+            });
         }, 300);
     });
     return unsubscribe;
@@ -123,13 +132,33 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
       if (index >= 0 && index < notes.length) {
           const note = notes[index].note;
-          setActiveNote(note);
+          setActiveNotes(prev => {
+              const next = new Set(prev);
+              next.add(note);
+              return next;
+          });
           handlePlay(note);
       }
     };
 
-    const handleKeyUp = () => {
-        setActiveNote(null);
+    const handleKeyUp = (e) => {
+      const key = e.key.toLowerCase();
+      let index = -1;
+
+      if (currentInstrument === 'drums' || currentScale === 'simple') {
+          index = KEY_MAPPINGS.simple.indexOf(key);
+      } else if (currentScale === 'full') {
+          index = KEY_MAPPINGS.full[key] !== undefined ? KEY_MAPPINGS.full[key] : -1;
+      }
+
+      if (index >= 0 && index < notes.length) {
+          const note = notes[index].note;
+          setActiveNotes(prev => {
+              const next = new Set(prev);
+              next.delete(note);
+              return next;
+          });
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -159,7 +188,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           color={n.color}
           label={n.label}
           onPlay={handlePlay}
-          forceActive={activeNote === n.note}
+          forceActive={activeNotes.has(n.note)}
           shortcut={getShortcut(index)}
           isSharp={n.note.includes('#')}
         />

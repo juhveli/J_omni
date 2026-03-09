@@ -5,6 +5,7 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = [];
 
         this.instruments = {
             // Samplers
@@ -130,6 +131,10 @@ class AudioEngine {
             // Stronger beat on the 1
             const isDownbeat = (Tone.Transport.position.split(':')[1] === '0' && Tone.Transport.position.split(':')[2].split('.')[0] === '0');
             this.metronomeSynth.triggerAttackRelease(isDownbeat ? "C3" : "C2", "16n", time);
+
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb(isDownbeat));
+            }, time);
         }, "4n");
 
         Tone.Transport.bpm.value = this.bpm;
@@ -273,6 +278,13 @@ class AudioEngine {
         this.noteListeners.push(callback);
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
         };
     }
 
