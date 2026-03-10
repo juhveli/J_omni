@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AIService } from '../services/aiService';
 
 const MagicGenerator = ({ onClose }) => {
+    // TODO: Add a feature to share generated songs directly to social media.
     const [prompt, setPrompt] = useState('');
     const [duration, setDuration] = useState(10);
     const [isGenerating, setIsGenerating] = useState(false);

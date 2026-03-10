@@ -8,6 +8,19 @@ const RecordingStudio = ({ onClose }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultUrl, setResultUrl] = useState(null);
     const [polishStyle, setPolishStyle] = useState('orchestral');
+    const [recordingTime, setRecordingTime] = useState(0);
+
+    React.useEffect(() => {
+        let interval;
+        if (isRecording) {
+            interval = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+    }, [isRecording]);
 
     const handleRecordToggle = async () => {
         if (isRecording) {
@@ -17,6 +30,7 @@ const RecordingStudio = ({ onClose }) => {
         } else {
             setRecordedBlob(null);
             setResultUrl(null);
+            setRecordingTime(0);
             await AudioEngine.startRecording();
             setIsRecording(true);
         }
@@ -90,6 +104,7 @@ const RecordingStudio = ({ onClose }) => {
                     >
                         {isRecording ? '⬛ Stop' : '🔴 Record'}
                     </button>
+                    {isRecording && <div className="timer">{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</div>}
 
                     {recordedBlob && !isRecording && (
                         <>
@@ -165,6 +180,11 @@ const RecordingStudio = ({ onClose }) => {
                 }
                 .record-btn.recording {
                     background: #ff0000; animation: pulse 1s infinite;
+                }
+                .timer {
+                    font-size: 1.5rem;
+                    font-family: monospace;
+                    margin-top: 0.5rem;
                 }
                 .play-btn {
                     background: #44ff44; color: black; padding: 0.5rem 1rem; border-radius: 10px; border: none; cursor: pointer;

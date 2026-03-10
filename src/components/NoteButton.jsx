@@ -55,11 +55,24 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
      timeoutRef.current = setTimeout(() => setIsActive(false), 200);
   };
 
+  const handlePointerEnter = (e) => {
+    // If pointer is down (buttons === 1 for primary mouse button)
+    if (e.buttons === 1) {
+      onPlay(note);
+      setIsActive(true);
+      addSparkle();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setIsActive(false), 200);
+    }
+  };
+
   return (
     <button
       className={`note-btn ${isActive ? 'active' : ''} ${isSharp ? 'sharp' : ''}`}
       style={{ '--note-color': color, borderColor: color }}
+      data-note={note}
       onPointerDown={handlePointerDown}
+      onPointerEnter={handlePointerEnter}
       onClick={handleClick}
       aria-label={`Play note ${label}${shortcut ? ` (Key: ${shortcut.toUpperCase()})` : ''}`}
     >
