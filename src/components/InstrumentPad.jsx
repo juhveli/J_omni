@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
 // Rainbow/Unicorn Palette
 const COLORS = {
-    C: '#FF6B97', // Pinkish Red
-    D: '#FFAA5C', // Orange
-    E: '#FFF78A', // Yellow
-    F: '#6BCB77', // Green
-    G: '#4D96FF', // Blue
-    A: '#8D72E1', // Purple
-    B: '#E668FF', // Violet
-    black: '#444444' // Sharps/Flats
+  C: '#FF6B97', // Pinkish Red
+  D: '#FFAA5C', // Orange
+  E: '#FFF78A', // Yellow
+  F: '#6BCB77', // Green
+  G: '#4D96FF', // Blue
+  A: '#8D72E1', // Purple
+  B: '#E668FF', // Violet
+  black: '#444444' // Sharps/Flats
 };
 
 const SCALES = {
@@ -43,101 +43,68 @@ const SCALES = {
 };
 
 const DRUMS = [
-    { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
-    { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
-    { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
-    { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
-    { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
+  { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
+  { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
+  { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
+  { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
+  { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
-// Key Mappings
-const KEY_MAPPINGS = {
-    simple: ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    full: {
-        'a': 0, // C
-        'w': 1, // C#
-        's': 2, // D
-        'e': 3, // D#
-        'd': 4, // E
-        'f': 5, // F
-        't': 6, // F#
-        'g': 7, // G
-        'y': 8, // G#
-        'h': 9, // A
-        'u': 10, // A#
-        'j': 11, // B
-        'k': 12  // C5
-    }
-};
-
-const REVERSE_KEY_MAPPINGS_FULL = Object.keys(KEY_MAPPINGS.full).reduce((acc, key) => {
-    acc[KEY_MAPPINGS.full[key]] = key;
-    return acc;
-}, {});
-
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
-  // TODO: Support multi-touch for playing chords on mobile devices.
-  // TODO: Implement glissando (slide to play) support across note buttons
-  // TODO: Add support for customizing key mappings via UI.
   const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
-
   if (currentInstrument === 'drums') {
-      notes = DRUMS;
+    notes = DRUMS;
   } else {
-      notes = SCALES[currentScale] || SCALES.simple;
+    notes = SCALES[currentScale] || SCALES.simple;
   }
 
-  const handlePlay = useCallback((note) => {
-    AudioEngine.playNote(note);
-  }, []);
+  const handleStart = (note) => {
+    AudioEngine.startNote(note);
+  };
+
+  const handleStop = (note) => {
+    AudioEngine.stopNote(note);
+  };
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
+      setActiveNotes(prev => new Set(prev).add(note));
+      // Reset after short delay to simulate press release for discrete melody events
+      setTimeout(() => {
         setActiveNotes(prev => {
-            const next = new Set(prev);
-            next.add(note);
-            return next;
+          const updated = new Set(prev);
+          updated.delete(note);
+          return updated;
         });
-        // Reset after short delay to simulate press release
-        setTimeout(() => {
-            setActiveNotes(prev => {
-                const next = new Set(prev);
-                next.delete(note);
-                return next;
-            });
-        }, 300);
+      }, 300);
     });
     return unsubscribe;
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore key events if the user is typing in an input or textarea
-      const target = e.target.tagName.toLowerCase();
-      if (target === 'input' || target === 'textarea') return;
-
       if (e.repeat) return;
 
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-          index = KEY_MAPPINGS.simple.indexOf(key);
+        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+        index = keys.indexOf(key);
       } else if (currentScale === 'full') {
-          index = KEY_MAPPINGS.full[key] !== undefined ? KEY_MAPPINGS.full[key] : -1;
+        const keyMap = {
+          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+        };
+        index = keyMap[key] !== undefined ? keyMap[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
-          const note = notes[index].note;
-          setActiveNotes(prev => {
-              const next = new Set(prev);
-              next.add(note);
-              return next;
-          });
-          handlePlay(note);
+        const note = notes[index].note;
+        setActiveNotes(prev => new Set(prev).add(note));
+        handleStart(note);
       }
     };
 
@@ -146,18 +113,23 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-          index = KEY_MAPPINGS.simple.indexOf(key);
+        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+        index = keys.indexOf(key);
       } else if (currentScale === 'full') {
-          index = KEY_MAPPINGS.full[key] !== undefined ? KEY_MAPPINGS.full[key] : -1;
+        const keyMap = {
+          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+        };
+        index = keyMap[key] !== undefined ? keyMap[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
-          const note = notes[index].note;
-          setActiveNotes(prev => {
-              const next = new Set(prev);
-              next.delete(note);
-              return next;
-          });
+        const note = notes[index].note;
+        setActiveNotes(prev => {
+          const updated = new Set(prev);
+          updated.delete(note);
+          return updated;
+        });
+        handleStop(note);
       }
     };
 
@@ -165,49 +137,22 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale, handlePlay]);
-
-  const getShortcut = (index) => {
-      if (currentInstrument === 'drums' || currentScale === 'simple') {
-          return KEY_MAPPINGS.simple[index];
-      } else if (currentScale === 'full') {
-           return REVERSE_KEY_MAPPINGS_FULL[index];
-      }
-      return null;
-  };
-
-  const handleTouchMove = useCallback((e) => {
-      if (e.touches.length === 0) return;
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (target && target.hasAttribute('data-note')) {
-          const note = target.getAttribute('data-note');
-          if (!activeNotes.has(note)) {
-              handlePlay(note);
-              // NoteButton logic handles visual active state but we can track it here too
-              // Active states for visual sparkles are managed inside NoteButton mostly during this drag
-          }
-      }
-  }, [activeNotes, handlePlay]);
+  }, [notes, currentInstrument, currentScale]);
 
   return (
-    <div
-        className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}
-        onTouchMove={handleTouchMove}
-    >
-      {notes.map((n, index) => (
+    <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
+      {notes.map((n) => (
         <NoteButton
           key={n.note}
           note={n.note}
           color={n.color}
           label={n.label}
-          onPlay={handlePlay}
+          onStart={handleStart}
+          onStop={handleStop}
           forceActive={activeNotes.has(n.note)}
-          shortcut={getShortcut(index)}
-          isSharp={n.note.includes('#')}
         />
       ))}
     </div>

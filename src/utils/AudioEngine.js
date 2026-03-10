@@ -5,7 +5,6 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
-        this.metronomeListeners = [];
 
         this.instruments = {
             // Samplers
@@ -36,21 +35,6 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
-        this.recorder = null;
-        this.masterGain = null;
-        this.globalVolume = 80;
-        this.metronomeSynth = null;
-        this.metronomeLoop = null;
-        this.bpm = 120;
-        this.instrumentVolumes = {
-            piano: 80,
-            guitar: 80,
-            clarinet: 80,
-            doubleBass: 80,
-            oboe: 80,
-            electricGuitar: 80,
-            drums: 80
-        };
     }
 
     async initialize() {
@@ -59,22 +43,8 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
-        // Effects
-        this.reverb = new Tone.Reverb({ decay: 2.5, preDelay: 0.1, wet: 0 });
-        this.delay = new Tone.FeedbackDelay({ delayTime: "8n", feedback: 0.3, wet: 0 });
-
-        // Create Master Output, Effects Chain, and Recorder
-        this.masterGain = new Tone.Gain(1);
-        this.masterGain.chain(this.delay, this.reverb, Tone.getDestination());
-
-        this.setVolume(this.globalVolume); // Initialize volume
-        this.recorder = new Tone.Recorder();
-        this.reverb.connect(this.recorder); // Record wet signal
-
-        // Visualizer Analyzer
-        this.analyser = new Tone.Analyser("waveform", 256);
-        this.reverb.connect(this.analyser);
-
+        // Create Master Limiter to prevent crackling/clipping
+        this.masterLimiter = new Tone.Limiter(-1).toDestination();
 
         // --- SYNTHESIZERS ---
 
@@ -82,188 +52,81 @@ class AudioEngine {
         this.instruments.synthPiano = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-        }).connect(this.masterGain);
+        }).connect(this.masterLimiter);
+        this.instruments.synthPiano.volume.value = -6;
 
         // Acoustic Guitar Synth
         this.instruments.synthGuitar = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 1 }
+            envelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 1 }
         });
-        const guitarFilter = new Tone.Filter(2000, "lowpass").connect(this.masterGain);
+        const guitarFilter = new Tone.Filter(1500, "lowpass").connect(this.masterLimiter);
         this.instruments.synthGuitar.connect(guitarFilter);
-        this.instruments.synthGuitar.volume.value = -5;
+        this.instruments.synthGuitar.volume.value = -12;
 
         // Clarinet Synth (Square-ish)
         this.instruments.synthClarinet = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "square" },
-            envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 0.5 }
-        }).connect(this.masterGain);
+            envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1 }
+        }).connect(this.masterLimiter);
+        this.instruments.synthClarinet.volume.value = -10;
 
         // Double Bass Synth (Sine/Triangle, Low)
         this.instruments.synthDoubleBass = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.8, release: 1 }
-        }).connect(this.masterGain);
+        }).connect(this.masterLimiter);
+        this.instruments.synthDoubleBass.volume.value = -3;
 
         // Oboe Synth (Sawtooth with vibrato)
         this.instruments.synthOboe = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.1, decay: 0.1, sustain: 0.7, release: 0.5 }
-        }).connect(this.masterGain);
+            envelope: { attack: 0.1, decay: 0.1, sustain: 0.6, release: 1 }
+        }).connect(this.masterLimiter);
+        this.instruments.synthOboe.volume.value = -10;
 
         // Electric Guitar Synth (Distorted)
         this.instruments.synthElectricGuitar = new Tone.PolySynth(Tone.Synth, {
-             oscillator: { type: "sawtooth" },
-             envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.5 }
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.8 }
         });
-        const dist = new Tone.Distortion(0.4).connect(this.masterGain);
+        const dist = new Tone.Distortion(0.3).connect(this.masterLimiter);
         this.instruments.synthElectricGuitar.connect(dist);
-
-        // Metronome Synth
-        this.metronomeSynth = new Tone.MembraneSynth({
-            pitchDecay: 0.008,
-            octaves: 2,
-            envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
-        }).connect(this.masterGain);
-
-        // Metronome Loop
-        this.metronomeLoop = new Tone.Loop((time) => {
-            // Stronger beat on the 1
-            const isDownbeat = (Tone.Transport.position.split(':')[1] === '0' && Tone.Transport.position.split(':')[2].split('.')[0] === '0');
-            this.metronomeSynth.triggerAttackRelease(isDownbeat ? "C3" : "C2", "16n", time);
-
-            Tone.Draw.schedule(() => {
-                this.metronomeListeners.forEach(cb => cb(isDownbeat));
-            }, time);
-        }, "4n");
-
-        Tone.Transport.bpm.value = this.bpm;
+        this.instruments.synthElectricGuitar.volume.value = -12;
+        this.instruments.synthElectricGuitar.volume.value = -10;
 
         // Drum Synths
-        this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterGain);
+        this.instruments.drumSynths.kick = new Tone.MembraneSynth().toDestination();
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
             noise: { type: 'white' },
             envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-        }).connect(this.masterGain);
+        }).toDestination();
         this.instruments.drumSynths.hihat = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).connect(this.masterGain);
+        }).toDestination();
         this.instruments.drumSynths.crash = new Tone.MetalSynth({
-             envelope: { attack: 0.001, decay: 1, release: 0.01 },
-             harmonicity: 5.1,
-             modulationIndex: 64,
-             resonance: 3000,
-             octaves: 1.5
-        }).connect(this.masterGain);
+            envelope: { attack: 0.001, decay: 1, release: 0.01 },
+            harmonicity: 5.1,
+            modulationIndex: 64,
+            resonance: 3000,
+            octaves: 1.5
+        }).toDestination();
         this.instruments.drumSynths.tom = new Tone.MembraneSynth({
             pitchDecay: 0.05,
             octaves: 4,
             oscillator: { type: "sine" }
-        }).connect(this.masterGain);
+        }).toDestination();
 
 
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
-        // Initialize MIDI
-        this._initMIDI();
-
         this.initialized = true;
-    }
-
-    setEffectWetness(effect, value) {
-        if (!this.initialized) return;
-        if (effect === 'reverb' && this.reverb) {
-            this.reverb.wet.value = value;
-        } else if (effect === 'delay' && this.delay) {
-            this.delay.wet.value = value;
-        }
-    }
-
-    _initMIDI() {
-        if (navigator.requestMIDIAccess) {
-            navigator.requestMIDIAccess().then(
-                (midiAccess) => {
-                    console.log("MIDI Access Granted");
-                    for (let input of midiAccess.inputs.values()) {
-                        input.onmidimessage = this._handleMIDIMessage.bind(this);
-                    }
-                    midiAccess.onstatechange = (e) => {
-                        if (e.port.state === 'connected' && e.port.type === 'input') {
-                            e.port.onmidimessage = this._handleMIDIMessage.bind(this);
-                        }
-                    };
-                },
-                () => console.warn("MIDI Access Denied or failed")
-            );
-        } else {
-            console.warn("Web MIDI API not supported in this browser");
-        }
-    }
-
-    _handleMIDIMessage(message) {
-        if (!this.initialized) return;
-        const [status, data1, data2] = message.data;
-        // Note On message (status 144-159)
-        if (status >= 144 && status <= 159 && data2 > 0) {
-            const noteName = this._midiToNoteName(data1);
-            this.playNote(noteName);
-        }
-    }
-
-    _midiToNoteName(midiNote) {
-        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const octave = Math.floor(midiNote / 12) - 1;
-        const note = notes[midiNote % 12];
-        return `${note}${octave}`;
-    }
-
-    startMetronome() {
-        if (!this.initialized) return;
-        this.metronomeLoop.start(0);
-        Tone.Transport.start();
-    }
-
-    stopMetronome() {
-        if (!this.initialized) return;
-        this.metronomeLoop.stop();
-        // Only stop transport if we aren't using it for other things that need to keep running,
-        // but for now metronome is the main transport user
-        Tone.Transport.stop();
-    }
-
-    setBpm(bpm) {
-        this.bpm = bpm;
-        if (!this.initialized) return;
-        Tone.Transport.bpm.value = bpm;
-    }
-
-    async startRecording() {
-        if (!this.initialized) await this.initialize();
-        if (this.recorder.state === 'started') return;
-        this.recorder.start();
-    }
-
-    async stopRecording() {
-        if (!this.initialized || this.recorder.state !== 'started') return null;
-        return await this.recorder.stop();
-    }
-
-    async playBlob(blob) {
-        if (!this.initialized) await this.initialize();
-        const url = URL.createObjectURL(blob);
-        const player = new Tone.Player(url, () => {
-            player.start();
-        }).toDestination();
-        player.onstop = () => {
-            player.dispose();
-            URL.revokeObjectURL(url);
-        };
     }
 
     subscribe(callback) {
@@ -281,22 +144,18 @@ class AudioEngine {
         };
     }
 
-    subscribeToMetronome(callback) {
-        this.metronomeListeners.push(callback);
-        return () => {
-            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
-        };
-    }
-
     _emitNoteEvent(note, time) {
-        // If time is undefined, we are playing immediately, emit immediately
-        if (time === undefined) {
+        // Calculate delay in milliseconds
+        // If time is undefined, delay is 0
+        const now = Tone.now();
+        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
+
+        if (delay === 0) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            // Schedule visual feedback synced precisely with the audio clock
-            Tone.Draw.schedule(() => {
+            setTimeout(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, time);
+            }, delay);
         }
     }
 
@@ -304,56 +163,6 @@ class AudioEngine {
         if (this.isLoading === loading) return;
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
-    }
-
-    setVolume(value) {
-        this.globalVolume = value;
-        if (!this.initialized) return;
-
-        // Map 0-100 to decibels using logarithmic scaling for more natural volume curve
-        // If 0, mute it completely
-        if (value === 0) {
-            Tone.getDestination().volume.value = -Infinity;
-        } else {
-            // Volume factor between 0 and 1, squared for natural exponential curve
-            const gain = Math.pow(value / 100, 2);
-            // Tone.gainToDb converts linear gain to decibels (-Infinity for 0, 0 for 1)
-            const db = Tone.gainToDb(gain);
-            Tone.getDestination().volume.value = db;
-        }
-    }
-
-    setInstrumentVolume(instrument, value) {
-        this.instrumentVolumes[instrument] = value;
-        if (!this.initialized) return;
-
-        // Apply volume directly to the instrument nodes
-        const gain = Math.pow(value / 100, 2);
-        const db = value === 0 ? -Infinity : Tone.gainToDb(gain);
-
-        // Find synth/sampler keys corresponding to instrument
-        const synthKey = 'synth' + instrument.charAt(0).toUpperCase() + instrument.slice(1);
-        const samplerKey = instrument + 'Sampler';
-
-        if (instrument === 'drums') {
-            Object.values(this.instruments.drumSynths).forEach(synth => {
-                if (synth && synth.volume) synth.volume.value = db;
-            });
-        } else {
-            const synth = this.instruments[synthKey];
-            const sampler = this.instruments[samplerKey];
-            if (synth && synth.volume) synth.volume.value = db;
-            if (sampler && sampler.volume) sampler.volume.value = db;
-        }
-    }
-
-    getInstrumentVolume(instrument) {
-        return this.instrumentVolumes[instrument] !== undefined ? this.instrumentVolumes[instrument] : 80;
-    }
-
-    getVisualizerData() {
-        if (!this.initialized || !this.analyser) return new Float32Array(256);
-        return this.analyser.getValue();
     }
 
     setSoundType(type) {
@@ -386,7 +195,6 @@ class AudioEngine {
     }
 
     // --- Sampler Loaders ---
-    // TODO: Support uploading custom SoundFonts for samplers
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
@@ -431,86 +239,120 @@ class AudioEngine {
             baseUrl: "https://tonejs.github.io/audio/salamander/",
             onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
     _loadGuitarSampler() {
         this._handleSamplerLoad('guitarSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
-            baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/acoustic_guitar_nylon/",
+            release: 1,
+            baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-nylon/",
             onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
     _loadClarinetSampler() {
         this._handleSamplerLoad('clarinetSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav", "A4": "A4.wav" },
+            release: 1,
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/clarinet/",
             onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
     _loadDoubleBassSampler() {
         this._handleSamplerLoad('doubleBassSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C2": "C2.wav", "E2": "E2.wav", "A2": "A2.wav" },
+            release: 1,
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/contrabass/",
             onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
     _loadOboeSampler() {
         this._handleSamplerLoad('oboeSampler', (onload, onerror) => new Tone.Sampler({
             urls: { "C4": "C4.wav", "E4": "E4.wav", "G4": "G4.wav" },
+            release: 1,
             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/bassoon/",
             onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
     _loadElectricGuitarSampler() {
         this._handleSamplerLoad('electricGuitarSampler', (onload, onerror) => new Tone.Sampler({
-             urls: { "C3": "C3.wav", "E3": "E3.wav", "A3": "A3.wav", "C4": "C4.wav" },
-             baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-electric/",
-             onload: onload,
+            urls: { "C3": "C3.wav", "E3": "E3.wav", "A3": "A3.wav", "C4": "C4.wav" },
+            release: 1,
+            baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-electric/",
+            onload: onload,
             onerror: onerror
-        }).connect(this.masterGain));
+        }).connect(this.masterLimiter));
     }
 
 
     playMelody(melody) {
         if (!this.initialized) return;
 
-        // Cancel previously scheduled events using Tone.Transport
-        // Since we use Tone.now(), we need to clear previous events if we want to prevent overlap
-        // We will store current scheduled ids in an array and cancel them
-        if (this.currentMelodyIds) {
-            this.currentMelodyIds.forEach(id => Tone.Transport.clear(id));
-        }
-        this.currentMelodyIds = [];
-
-        // Temporarily ensure Transport is started if not already
-        if (Tone.Transport.state !== 'started') {
-             Tone.Transport.start();
-        }
-
+        const now = Tone.now();
         let cumulativeTime = 0;
 
         melody.forEach(item => {
-             const duration = item.duration || "8n";
-             const note = item.note;
+            const duration = item.duration || "8n";
+            const note = item.note;
 
-             // Use Tone.Transport to schedule, so we can clear them easily
-             const id = Tone.Transport.schedule((time) => {
-                  this.playNote(note, duration, time);
-             }, "+" + cumulativeTime);
+            // Schedule note
+            this.playNote(note, duration, now + cumulativeTime);
 
-             this.currentMelodyIds.push(id);
-
-             cumulativeTime += Tone.Time(duration).toSeconds();
+            cumulativeTime += Tone.Time(duration).toSeconds();
         });
+    }
+
+    /**
+     * Start playing a note (sustained)
+     */
+    startNote(note) {
+        if (!this.initialized) return;
+
+        this._emitNoteEvent(note, undefined);
+
+        if (this.currentInstrument === 'drums') {
+            this._playDrum(note);
+            return;
+        }
+
+        if (this.soundType === 'sampled') {
+            const sampler = this._getSampler();
+            if (sampler && sampler.loaded) {
+                sampler.triggerAttack(note);
+            } else {
+                this._getSynth()?.triggerAttack(note);
+            }
+        } else {
+            this._getSynth()?.triggerAttack(note);
+        }
+    }
+
+    /**
+     * Stop playing a note (release)
+     */
+    stopNote(note) {
+        if (!this.initialized) return;
+
+        if (this.currentInstrument === 'drums') return;
+
+        if (this.soundType === 'sampled') {
+            const sampler = this._getSampler();
+            if (sampler && sampler.loaded) {
+                sampler.triggerRelease(note);
+            } else {
+                this._getSynth()?.triggerRelease(note);
+            }
+        } else {
+            this._getSynth()?.triggerRelease(note);
+        }
     }
 
     playNote(note, duration = "8n", time = undefined) {
@@ -562,17 +404,7 @@ class AudioEngine {
     }
 
     _playSampled(note, duration, time) {
-        const inst = this.instruments;
-        let sampler = null;
-
-        switch (this.currentInstrument) {
-            case 'piano': sampler = inst.pianoSampler; break;
-            case 'guitar': sampler = inst.guitarSampler; break;
-            case 'clarinet': sampler = inst.clarinetSampler; break;
-            case 'doubleBass': sampler = inst.doubleBassSampler; break;
-            case 'oboe': sampler = inst.oboeSampler; break;
-            case 'electricGuitar': sampler = inst.electricGuitarSampler; break;
-        }
+        const sampler = this._getSampler();
 
         if (sampler && sampler.loaded) {
             sampler.triggerAttackRelease(note, duration, time);
@@ -583,21 +415,35 @@ class AudioEngine {
     }
 
     _playSynthesized(note, duration, time) {
-        const inst = this.instruments;
-        let synth = null;
-
-        switch (this.currentInstrument) {
-            case 'piano': synth = inst.synthPiano; break;
-            case 'guitar': synth = inst.synthGuitar; break;
-            case 'clarinet': synth = inst.synthClarinet; break;
-            case 'doubleBass': synth = inst.synthDoubleBass; break;
-            case 'oboe': synth = inst.synthOboe; break;
-            case 'electricGuitar': synth = inst.synthElectricGuitar; break;
-            default: synth = inst.synthPiano;
-        }
-
+        const synth = this._getSynth();
         if (synth) {
             synth.triggerAttackRelease(note, duration, time);
+        }
+    }
+
+    _getSampler() {
+        const inst = this.instruments;
+        switch (this.currentInstrument) {
+            case 'piano': return inst.pianoSampler;
+            case 'guitar': return inst.guitarSampler;
+            case 'clarinet': return inst.clarinetSampler;
+            case 'doubleBass': return inst.doubleBassSampler;
+            case 'oboe': return inst.oboeSampler;
+            case 'electricGuitar': return inst.electricGuitarSampler;
+            default: return null;
+        }
+    }
+
+    _getSynth() {
+        const inst = this.instruments;
+        switch (this.currentInstrument) {
+            case 'piano': return inst.synthPiano;
+            case 'guitar': return inst.synthGuitar;
+            case 'clarinet': return inst.synthClarinet;
+            case 'doubleBass': return inst.synthDoubleBass;
+            case 'oboe': return inst.synthOboe;
+            case 'electricGuitar': return inst.synthElectricGuitar;
+            default: return inst.synthPiano;
         }
     }
 }

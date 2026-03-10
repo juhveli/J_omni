@@ -1,10 +1,9 @@
-import React, { useState, useEffect, memo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, isSharp }) => {
+const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
-  const timeoutRef = useRef(null);
 
   const addSparkle = () => {
     const id = Date.now();
@@ -19,68 +18,53 @@ const NoteButton = memo(({ note, label, color, onPlay, forceActive, shortcut, is
     }, 1000);
   };
 
-  const handleInteraction = () => {
-    if (!forceActive) onPlay(note); // Only play if not already playing via prop
+  const startPlaying = () => {
+    if (isActive) return;
     setIsActive(true);
     addSparkle();
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setIsActive(false), 200);
+    onStart(note);
   };
 
-  // Handle external forceActive (keyboard)
+  const stopPlaying = () => {
+    if (!isActive) return;
+    setIsActive(false);
+    onStop(note);
+  };
+
+  // Handle external forceActive (keyboard or magic melody)
   useEffect(() => {
     if (forceActive) {
-      handleInteraction();
+      startPlaying();
+    } else {
+      stopPlaying();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
 
   const handlePointerDown = (e) => {
     e.preventDefault();
-    onPlay(note);
-    setIsActive(true);
-    addSparkle();
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setIsActive(false), 200);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    startPlaying();
   };
 
-  // For mouse click fallbacks if pointer events fail (though pointerdown covers both)
-  const handleClick = () => {
-     // Usually covered by pointerdown, but good for a11y keyboard triggering if we separate handlers
-     // Keyboard 'Enter' triggers onClick
-     onPlay(note);
-     setIsActive(true);
-     addSparkle();
-     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-     timeoutRef.current = setTimeout(() => setIsActive(false), 200);
-  };
-
-  const handlePointerEnter = (e) => {
-    // If pointer is down (buttons === 1 for primary mouse button)
-    if (e.buttons === 1) {
-      onPlay(note);
-      setIsActive(true);
-      addSparkle();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => setIsActive(false), 200);
-    }
+  const handlePointerUp = (e) => {
+    e.preventDefault();
+    stopPlaying();
   };
 
   return (
     <button
-      className={`note-btn ${isActive ? 'active' : ''} ${isSharp ? 'sharp' : ''}`}
+      className={`note-btn ${isActive ? 'active' : ''}`}
       style={{ '--note-color': color, borderColor: color }}
-      data-note={note}
       onPointerDown={handlePointerDown}
-      onPointerEnter={handlePointerEnter}
-      onClick={handleClick}
-      aria-label={`Play note ${label}${shortcut ? ` (Key: ${shortcut.toUpperCase()})` : ''}`}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
-      {shortcut && <span className="keyboard-hint">{shortcut.toUpperCase()}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
-});
+};
 
 export default NoteButton;
