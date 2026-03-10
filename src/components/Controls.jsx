@@ -3,6 +3,7 @@ import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, onOpenRecording, onOpenMagic }) => {
+  // TODO: Add support for saving user preferences/profiles (e.g., favorite instrument, BPM).
   const [volume, setVolume] = useState(80);
 
   const handleMagicClick = () => {

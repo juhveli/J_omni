@@ -179,8 +179,25 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       return null;
   };
 
+  const handleTouchMove = useCallback((e) => {
+      if (e.touches.length === 0) return;
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target && target.hasAttribute('data-note')) {
+          const note = target.getAttribute('data-note');
+          if (!activeNotes.has(note)) {
+              handlePlay(note);
+              // NoteButton logic handles visual active state but we can track it here too
+              // Active states for visual sparkles are managed inside NoteButton mostly during this drag
+          }
+      }
+  }, [activeNotes, handlePlay]);
+
   return (
-    <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
+    <div
+        className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}
+        onTouchMove={handleTouchMove}
+    >
       {notes.map((n, index) => (
         <NoteButton
           key={n.note}

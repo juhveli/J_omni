@@ -27,13 +27,19 @@ const Visualizer = () => {
       const height = canvas.height;
       const data = AudioEngine.getVisualizerData();
 
-      ctx.fillStyle = '#111'; // Match dark mode somewhat or use transparent
+      // Fade-out trail effect
+      ctx.fillStyle = 'rgba(17, 17, 17, 0.2)';
       ctx.fillRect(0, 0, width, height);
 
       if (!data || data.length === 0) return;
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#00ffff'; // Unicorn cyan
+      // Create a gradient for the line
+      const gradient = ctx.createLinearGradient(0, 0, width, 0);
+      gradient.addColorStop(0, '#ff00cc'); // Unicorn pink
+      gradient.addColorStop(1, '#00ffff'); // Unicorn cyan
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = gradient;
       ctx.beginPath();
 
       const sliceWidth = width * 1.0 / data.length;
