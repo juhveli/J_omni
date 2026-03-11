@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeBPM, setMetronomeBPM] = useState(120);
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [metronomeTick, setMetronomeTick] = useState(false);
+  const [globalVolume, setGlobalVolume] = useState(100);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+        setMetronomeTick(true);
+        setTimeout(() => setMetronomeTick(false), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -78,6 +90,57 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+         <div className="control-group">
+            <h3>Volume</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%', justifyContent: 'center', marginTop: '10px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🔈</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={globalVolume}
+                      onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setGlobalVolume(val);
+                          AudioEngine.setVolume(val);
+                      }}
+                      style={{ width: '100px' }}
+                    />
+                    <span style={{ fontSize: '1.2rem' }}>🔊</span>
+                </div>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <button
+                  className={`control-btn ${isMetronomePlaying ? 'active' : ''}`}
+                  onClick={() => setIsMetronomePlaying(AudioEngine.toggleMetronome())}
+                  style={{ backgroundColor: metronomeTick ? 'var(--secondary-color)' : '' }}
+                >
+                    ⏱️ {isMetronomePlaying ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '0.8rem' }}>BPM: {metronomeBPM}</span>
+                    <input
+                      type="range"
+                      min="60"
+                      max="200"
+                      value={metronomeBPM}
+                      onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setMetronomeBPM(val);
+                          AudioEngine.setMetronomeBPM(val);
+                      }}
+                      style={{ width: '100px' }}
+                    />
+                </div>
+            </div>
+         </div>
+
       </div>
     </div>
   );
