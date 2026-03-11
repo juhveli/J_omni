@@ -389,6 +389,14 @@ header h1 {
   pointer-events: none;
 }
 
+.keyboard-hint {
+  position: absolute;
+  bottom: 0.5rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
 /* Simple scale button sizes */
 .instrument-pad.simple .note-btn {
   max-width: 100px;
