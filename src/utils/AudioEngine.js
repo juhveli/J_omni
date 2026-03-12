@@ -102,30 +102,30 @@ class AudioEngine {
         this.instruments.synthElectricGuitar.volume.value = -10;
 
         // Drum Synths
-        this.instruments.drumSynths.kick = new Tone.MembraneSynth().toDestination();
+        this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterLimiter);
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
             noise: { type: 'white' },
             envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.hihat = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.crash = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 64,
             resonance: 3000,
             octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.tom = new Tone.MembraneSynth({
             pitchDecay: 0.05,
             octaves: 4,
             oscillator: { type: "sine" }
-        }).toDestination();
+        }).connect(this.masterLimiter);
 
 
         // --- SAMPLERS ---
