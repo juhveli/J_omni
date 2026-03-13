@@ -37,6 +37,9 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: [Feature] Cloud Saves and User Profiles - Implement user login to save created melodies/loops to the cloud
+  // TODO: [Feature] Custom SoundFonts - Add functionality to upload or link to custom SoundFont files
+
   return (
     <div className="app-container">
       {!isAudioStarted ? (
