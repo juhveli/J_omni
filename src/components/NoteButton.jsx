@@ -67,4 +67,4 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   );
 };
 
-export default NoteButton;
+export default React.memo(NoteButton);

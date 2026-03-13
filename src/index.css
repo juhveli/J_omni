@@ -332,6 +332,12 @@ header h1 {
   }
 }
 
+.control-btn.flash {
+  background-color: var(--secondary-color) !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
 /* Instrument Pad */
 .instrument-pad {
   display: flex;

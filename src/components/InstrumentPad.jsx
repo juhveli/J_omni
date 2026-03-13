@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -53,20 +53,21 @@ const DRUMS = [
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
-  let notes;
-  if (currentInstrument === 'drums') {
-    notes = DRUMS;
-  } else {
-    notes = SCALES[currentScale] || SCALES.simple;
-  }
+  const notes = useMemo(() => {
+    if (currentInstrument === 'drums') {
+      return DRUMS;
+    } else {
+      return SCALES[currentScale] || SCALES.simple;
+    }
+  }, [currentInstrument, currentScale]);
 
-  const handleStart = (note) => {
+  const handleStart = useCallback((note) => {
     AudioEngine.startNote(note);
-  };
+  }, []);
 
-  const handleStop = (note) => {
+  const handleStop = useCallback((note) => {
     AudioEngine.stopNote(note);
-  };
+  }, []);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
@@ -140,7 +141,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handleStart, handleStop]);
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>

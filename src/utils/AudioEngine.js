@@ -35,6 +35,9 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronomeListeners = [];
+        this.isMetronomePlaying = false;
     }
 
     async initialize() {
@@ -126,7 +129,42 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
+
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport entirely if other things might be using it,
+            // but for now metronome is the main transport user.
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBPM(bpm) {
+        Tone.Transport.bpm.value = bpm;
     }
 
     subscribe(callback) {
