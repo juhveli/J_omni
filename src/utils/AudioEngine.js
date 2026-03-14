@@ -123,8 +123,24 @@ class AudioEngine {
 
 
         // --- SAMPLERS ---
+        // TODO: Implement custom SoundFonts loader here
         // Lazy load the default instrument
         this._loadPianoSampler();
+
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb(true));
+                setTimeout(() => {
+                    this.metronomeListeners.forEach(cb => cb(false));
+                }, 100);
+            }, time);
+        }, "4n");
+        this.metronomeListeners = [];
+        this.isMetronomePlaying = false;
 
         this.initialized = true;
     }
@@ -142,6 +158,33 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
     }
 
     _emitNoteEvent(note, time) {

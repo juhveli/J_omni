@@ -97,6 +97,7 @@ function App() {
                 <ComfyUIPanel isAudioStarted={isAudioStarted} />
               </div>
               <div className="studio-main">
+                {/* TODO: Add Piano Roll interface here */}
                 <LayerManager isAudioStarted={isAudioStarted} />
               </div>
             </div>

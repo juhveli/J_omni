@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -124,6 +124,7 @@ const LayerManager = ({ isAudioStarted }) => {
     return (
         <div className="layer-manager">
             <div className="layer-header">
+                {/* TODO: Implement cloud sync indicator here */}
                 <h3>🎚️ Layers ({layers.length})</h3>
                 <div className="layer-actions">
                     <button
