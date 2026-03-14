@@ -383,6 +383,27 @@ header h1 {
   }
 }
 
+.metronome-group .control-btn.tick {
+  background-color: var(--secondary-color);
+  color: var(--bg-color);
+  transform: scale(1.1);
+  box-shadow: 0 0 20px var(--secondary-color);
+  transition: all 0.1s;
+}
+
+.bpm-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.bpm-control input[type=range] {
+  width: 100px;
+  margin-top: 5px;
+}
+
 .note-label {
   text-shadow: 1px 1px 2px black;
   font-family: monospace;
