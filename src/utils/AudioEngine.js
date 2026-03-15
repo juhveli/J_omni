@@ -43,6 +43,8 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
+        this._initializeMidi();
+
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
 
@@ -129,6 +131,49 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    // TODO: Add support for user-uploaded Custom SoundFonts instead of using Tone.Sampler presets
+
+    // TODO: Implement Piano Roll Interface for editing sequences
+
+    async _initializeMidi() {
+        if (!navigator.requestMIDIAccess) {
+            console.log('Web MIDI API not supported in this browser.');
+            return;
+        }
+
+        try {
+            const midiAccess = await navigator.requestMIDIAccess();
+            console.log('MIDI Access Granted');
+
+            midiAccess.inputs.forEach((entry) => {
+                entry.onmidimessage = (event) => this._onMidiMessage(event);
+            });
+
+            midiAccess.onstatechange = (event) => {
+                if (event.port.type === 'input' && event.port.state === 'connected') {
+                    event.port.onmidimessage = (e) => this._onMidiMessage(e);
+                }
+            };
+        } catch (err) {
+            console.log('MIDI Access Denied or Failed:', err);
+        }
+    }
+
+    _onMidiMessage(event) {
+        const [status, data1, data2] = event.data;
+        const command = status >> 4;
+        const noteNumber = data1;
+        const velocity = data2;
+
+        if (command === 9 && velocity > 0) { // Note On
+            const note = Tone.Frequency(noteNumber, "midi").toNote();
+            this.startNote(note);
+        } else if (command === 8 || (command === 9 && velocity === 0)) { // Note Off
+            const note = Tone.Frequency(noteNumber, "midi").toNote();
+            this.stopNote(note);
+        }
+    }
+
     subscribe(callback) {
         this.listeners.push(callback);
         callback(this.isLoading);
@@ -145,17 +190,12 @@ class AudioEngine {
     }
 
     _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
-
-        if (delay === 0) {
+        if (time === undefined) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            setTimeout(() => {
+            Tone.Draw.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
         }
     }
 

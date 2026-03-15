@@ -37,6 +37,8 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: Cloud saves (user authentication and preference profiles)
+
   return (
     <div className="app-container">
       {!isAudioStarted ? (
