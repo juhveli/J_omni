@@ -36,6 +36,7 @@ class RecordingEngine {
 
     /**
      * Initialize the recording engine
+     * // TODO: Cloud saves with user authentication
      */
     async initialize() {
         // Prevent double initialization (React strict mode)
@@ -369,7 +370,7 @@ class RecordingEngine {
 
         // Find the longest layer duration
         const sampleRate = 44100;
-        const maxDuration = Math.max(...activeLayers.map(l => l.buffer.duration || 0));
+        const maxDuration = activeLayers.reduce((max, l) => Math.max(max, l.buffer.duration || 0), 0);
         if (maxDuration === 0) return null;
 
         const numSamples = Math.ceil(maxDuration * sampleRate);
