@@ -123,10 +123,48 @@ class AudioEngine {
 
 
         // --- SAMPLERS ---
+        // TODO: Custom SoundFonts - Add support for loading custom sf2/sfz files
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this.enableMIDI();
+
         this.initialized = true;
+    }
+
+    enableMIDI() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI Access Granted");
+                    const inputs = midiAccess.inputs.values();
+                    for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+                        input.value.onmidimessage = this._handleMIDIMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.type === "input" && e.port.state === "connected") {
+                            e.port.onmidimessage = this._handleMIDIMessage.bind(this);
+                        }
+                    };
+                },
+                () => console.warn("MIDI Access Denied")
+            );
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMIDIMessage(message) {
+        const [command, note, velocity] = message.data;
+        // Command 144 (0x90) is Note On, 128 (0x80) is Note Off.
+        // Some devices send Note On with 0 velocity for Note Off.
+        if (command === 144 && velocity > 0) {
+            const frequency = Tone.Frequency(note, "midi").toNote();
+            this.startNote(frequency);
+        } else if (command === 128 || (command === 144 && velocity === 0)) {
+            const frequency = Tone.Frequency(note, "midi").toNote();
+            this.stopNote(frequency);
+        }
     }
 
     subscribe(callback) {
@@ -145,17 +183,13 @@ class AudioEngine {
     }
 
     _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
-
-        if (delay === 0) {
-            this.noteListeners.forEach(cb => cb(note));
-        } else {
-            setTimeout(() => {
+        // Use Tone.Draw to synchronize UI with Web Audio clock
+        if (time) {
+            Tone.Draw.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
+        } else {
+            this.noteListeners.forEach(cb => cb(note));
         }
     }
 
