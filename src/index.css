@@ -17,6 +17,12 @@ body {
   user-select: none;
 }
 
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--secondary-color);
+  outline-offset: 2px;
+}
+
 #root {
   width: 100vw;
   height: 100vh;
