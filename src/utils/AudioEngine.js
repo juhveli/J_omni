@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.metronomeListeners = [];
+        this.metronomeBpm = 120;
     }
 
     async initialize() {
@@ -122,11 +128,49 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME SYNTH ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            this._emitMetronomeEvent(time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
+        // TODO: Expand this section to support Custom SoundFonts. Let users load external .sf2/.sfz.
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    _emitMetronomeEvent(time) {
+        Tone.Draw.schedule(() => {
+            this.metronomeListeners.forEach(cb => cb());
+        }, time);
+    }
+
+    toggleMetronome(enabled) {
+        if (!this.initialized) return;
+        if (enabled) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+    }
+
+    setBpm(bpm) {
+        if (!this.initialized) return;
+        this.metronomeBpm = bpm;
+        Tone.Transport.bpm.value = bpm;
     }
 
     subscribe(callback) {

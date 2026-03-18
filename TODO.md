@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Cloud Saves & User Profiles**: Implement user authentication and cloud storage to save custom presets, recordings, and preferences across devices.
+9.  **[Feature] Custom SoundFonts**: Allow users to load custom SoundFont (`.sf2`) or `.sfz` files to expand the instrument library beyond the built-in Tone.js samplers.
+10. **[Enhancement] Piano Roll Interface**: Add a traditional piano roll view in the Studio tab for advanced users to manually edit recorded notes, durations, and velocities.

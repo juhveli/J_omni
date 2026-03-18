@@ -37,6 +37,7 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: Retrieve 'Cloud Saves & User Profiles' (preferences, saved recordings) when user auth is added.
   return (
     <div className="app-container">
       {!isAudioStarted ? (

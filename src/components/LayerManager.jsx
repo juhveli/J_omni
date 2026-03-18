@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -122,6 +122,7 @@ const LayerManager = ({ isAudioStarted }) => {
     if (!isAudioStarted) return null;
 
     return (
+        // TODO: In the future, render a 'Piano Roll Interface' here to allow granular editing of notes in each layer.
         <div className="layer-manager">
             <div className="layer-header">
                 <h3>🎚️ Layers ({layers.length})</h3>

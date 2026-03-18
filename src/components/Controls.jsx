@@ -1,11 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [isBeatActive, setIsBeatActive] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+      setIsBeatActive(true);
+      setTimeout(() => setIsBeatActive(false), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleToggleMetronome = () => {
+    const nextState = !metronomeEnabled;
+    setMetronomeEnabled(nextState);
+    AudioEngine.toggleMetronome(nextState);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setBpm(newBpm);
   };
 
   return (
@@ -76,6 +99,41 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="metronome-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button
+                        className={`control-btn ${metronomeEnabled ? 'active' : ''}`}
+                        onClick={handleToggleMetronome}
+                    >
+                        ⏱️ {metronomeEnabled ? 'Stop' : 'Start'}
+                    </button>
+                    <div
+                        style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: isBeatActive ? 'var(--primary-color)' : 'rgba(255, 255, 255, 0.2)',
+                            transition: 'background-color 0.1s',
+                            boxShadow: isBeatActive ? '0 0 10px var(--primary-color)' : 'none'
+                        }}
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)' }}>BPM: {bpm}</span>
+                    <input
+                        type="range"
+                        min="60"
+                        max="200"
+                        value={bpm}
+                        onChange={handleBpmChange}
+                        style={{ accentColor: 'var(--secondary-color)' }}
+                    />
+                </div>
             </div>
          </div>
       </div>
