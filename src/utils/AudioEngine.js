@@ -5,6 +5,7 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = [];
 
         this.instruments = {
             // Samplers
@@ -43,8 +44,11 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
+        // Create Master Gain for volume control
+        this.masterGain = new Tone.Gain(1).toDestination();
+
         // Create Master Limiter to prevent crackling/clipping
-        this.masterLimiter = new Tone.Limiter(-1).toDestination();
+        this.masterLimiter = new Tone.Limiter(-1).connect(this.masterGain);
 
         // --- SYNTHESIZERS ---
 
@@ -122,11 +126,58 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- Metronome ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
+        this.isMetronomePlaying = false;
+        Tone.Transport.bpm.value = 120;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            if (Tone.Transport.state === "started" && !this._isPlayingMelody) {
+                Tone.Transport.stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    setVolume(value) {
+        if (!this.initialized) return;
+        // Apply exponential curve for natural human volume perception
+        const gain = Math.pow(value / 100, 2);
+        this.masterGain.gain.rampTo(gain, 0.1);
     }
 
     subscribe(callback) {
@@ -296,6 +347,7 @@ class AudioEngine {
     playMelody(melody) {
         if (!this.initialized) return;
 
+        this._isPlayingMelody = true;
         const now = Tone.now();
         let cumulativeTime = 0;
 
@@ -308,6 +360,13 @@ class AudioEngine {
 
             cumulativeTime += Tone.Time(duration).toSeconds();
         });
+
+        setTimeout(() => {
+            this._isPlayingMelody = false;
+            if (!this.isMetronomePlaying && Tone.Transport.state === "started") {
+                Tone.Transport.stop();
+            }
+        }, cumulativeTime * 1000);
     }
 
     /**
