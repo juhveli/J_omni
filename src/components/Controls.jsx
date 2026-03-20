@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [metronomeFlash, setMetronomeFlash] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+      setMetronomeFlash(true);
+      setTimeout(() => setMetronomeFlash(false), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    const isPlaying = AudioEngine.toggleMetronome(bpm);
+    setIsMetronomePlaying(isPlaying);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setBPM(newBpm);
   };
 
   return (
@@ -77,6 +99,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                     🪄 Magic Melody
                 </button>
             </div>
+         </div>
+
+         <div className="control-group metronome-group">
+             <h3>Metronome <span className={`metronome-indicator ${metronomeFlash ? 'flash' : ''}`}>🔴</span></h3>
+             <div className="toggle-group">
+                 <button
+                     className={`control-btn ${isMetronomePlaying ? 'active' : ''}`}
+                     onClick={handleMetronomeToggle}
+                 >
+                     ⏱️ {isMetronomePlaying ? 'Stop' : 'Start'}
+                 </button>
+                 <div className="bpm-slider-container">
+                     <input
+                         type="range"
+                         min="60"
+                         max="200"
+                         value={bpm}
+                         onChange={handleBpmChange}
+                         className="bpm-slider"
+                     />
+                     <span className="bpm-label">{bpm} BPM</span>
+                 </div>
+             </div>
          </div>
       </div>
     </div>
