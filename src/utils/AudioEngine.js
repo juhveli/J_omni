@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -123,24 +123,63 @@ class AudioEngine {
 
 
         // --- SAMPLERS ---
+        // TODO: [Feature] Custom SoundFonts
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+
+        this.setupMIDI();
+    }
+
+    setupMIDI() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI Access Granted");
+                    for (let input of midiAccess.inputs.values()) {
+                        input.onmidimessage = this._handleMIDIMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.type === "input" && e.port.state === "connected") {
+                            e.port.onmidimessage = this._handleMIDIMessage.bind(this);
+                        }
+                    };
+                },
+                () => console.warn("MIDI Access Denied or Not Supported")
+            );
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMIDIMessage(message) {
+        const [status, data1, data2] = message.data;
+        const command = status >> 4;
+        // const channel = status & 0xf;
+
+        const note = Tone.Frequency(data1, "midi").toNote();
+        const velocity = data2 / 127; // Normalize velocity 0-1
+
+        if (command === 9 && velocity > 0) { // Note On
+            this.startNote(note, velocity);
+        } else if (command === 8 || (command === 9 && velocity === 0)) { // Note Off
+            this.stopNote(note);
+        }
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
