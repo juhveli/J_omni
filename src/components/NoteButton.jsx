@@ -18,25 +18,30 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
     }, 1000);
   };
 
-  const startPlaying = () => {
+  const startPlaying = (fromPointer) => {
     if (isActive) return;
     setIsActive(true);
     addSparkle();
-    onStart(note);
+    if (fromPointer) {
+      onStart(note);
+    }
   };
 
-  const stopPlaying = () => {
+  const stopPlaying = (fromPointer) => {
     if (!isActive) return;
     setIsActive(false);
-    onStop(note);
+    if (fromPointer) {
+      onStop(note);
+    }
   };
 
   // Handle external forceActive (keyboard or magic melody)
+  // This only triggers visual changes, as the parent handles audio for these
   useEffect(() => {
     if (forceActive) {
-      startPlaying();
+      startPlaying(false);
     } else {
-      stopPlaying();
+      stopPlaying(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
@@ -44,12 +49,12 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   const handlePointerDown = (e) => {
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    startPlaying();
+    startPlaying(true);
   };
 
   const handlePointerUp = (e) => {
     e.preventDefault();
-    stopPlaying();
+    stopPlaying(true);
   };
 
   return (

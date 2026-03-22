@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
+        this.metronomeListeners = new Set();
     }
 
     async initialize() {
@@ -122,6 +128,10 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -142,6 +152,57 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    setBpm(newBpm) {
+        this.bpm = newBpm;
+        if (Tone.Transport.state === 'started') {
+            Tone.Transport.bpm.rampTo(this.bpm, 0.1);
+        }
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop?.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+            return false;
+        } else {
+            Tone.Transport.bpm.value = this.bpm;
+
+            // Create loop if it doesn't exist
+            if (!this.metronomeLoop) {
+                let beatCount = 0;
+                this.metronomeLoop = new Tone.Loop((time) => {
+                    // Play higher pitch on the first beat
+                    if (beatCount % 4 === 0) {
+                        this.metronomeSynth.triggerAttackRelease("C4", "8n", time);
+                    } else {
+                        this.metronomeSynth.triggerAttackRelease("C3", "8n", time);
+                    }
+
+                    Tone.Draw.schedule(() => {
+                        this.metronomeListeners.forEach(cb => cb(beatCount % 4 === 0));
+                    }, time);
+
+                    beatCount++;
+                }, "4n");
+            }
+
+            this.metronomeLoop.start(0);
+            Tone.Transport.start();
+            this.isMetronomePlaying = true;
+            return true;
+        }
     }
 
     _emitNoteEvent(note, time) {
