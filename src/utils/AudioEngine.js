@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome State
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeListeners = [];
     }
 
     async initialize() {
@@ -122,11 +128,64 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+        }).connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            const isDownbeat = this.metronomeLoop.progress === 0;
+            const note = isDownbeat ? "C3" : "C2";
+            this.metronomeSynth.triggerAttackRelease(note, "16n", time);
+
+            // Notify UI
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb(isDownbeat));
+            }, time);
+        }, "4n");
+
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome(bpm = 120) {
+        if (!this.initialized) return false;
+
+        Tone.Transport.bpm.value = bpm;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            if (Tone.Transport.state !== 'started') {
+                 // Don't stop transport if something else might be using it, but for now it's okay.
+                 Tone.Transport.stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        if (Tone.Transport) {
+             Tone.Transport.bpm.value = bpm;
+        }
     }
 
     subscribe(callback) {

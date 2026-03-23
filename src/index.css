@@ -308,6 +308,37 @@ header h1 {
   font-size: 0.85rem;
 }
 
+/* Metronome Controls */
+.metronome-controls .toggle-group {
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.metronome-btn.pulse {
+  background: var(--secondary-color);
+  color: #1a0b2e;
+  box-shadow: 0 0 30px var(--secondary-color);
+  transform: scale(1.1);
+}
+
+.bpm-slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bpm-slider {
+  accent-color: var(--primary-color);
+  width: 120px;
+}
+
+.bpm-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
 @media (max-width: 768px) {
   .instrument-btn {
     width: 70px;
@@ -387,6 +418,18 @@ header h1 {
   text-shadow: 1px 1px 2px black;
   font-family: monospace;
   pointer-events: none;
+}
+
+.keyboard-hint {
+  position: absolute;
+  bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
 }
 
 /* Simple scale button sizes */
