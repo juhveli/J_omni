@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Cloud Saves**: Allow users to save their settings and recordings to the cloud, including user authentication and preference profiles.
+9.  **[Feature] Custom SoundFonts**: Enable users to upload and use their own SoundFonts for instruments.
+10. **[Feature] Piano Roll Interface**: Introduce a piano roll interface for more advanced melody editing and visualization.
