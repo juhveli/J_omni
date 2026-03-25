@@ -747,3 +747,31 @@ header h1 {
     grid-template-columns: 1fr;
   }
 }
+/* Sparkle */
+.sparkle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  animation: sparkle-anim 1s ease-out forwards;
+}
+
+@keyframes sparkle-anim {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -150%) scale(1.5);
+  }
+}
+
+/* Keyboard hint */
+.keyboard-hint {
+  position: absolute;
+  bottom: 5px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: monospace;
+  pointer-events: none;
+}

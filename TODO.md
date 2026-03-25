@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Interactive Tutorials**: Create a feature to teach users step-by-step how to play simple songs with guided visual indicators and feedback.
+9.  **[Feature] Custom SoundFonts**: Allow users to upload their own `.sf2` SoundFont files to use custom instruments.
+10. **[Feature] Social Sharing**: Add the ability for users to share their creations via direct link or directly to social media platforms.
