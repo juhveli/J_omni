@@ -5,6 +5,11 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = [];
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
 
         this.instruments = {
             // Samplers
@@ -126,6 +131,17 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        Tone.Transport.bpm.value = this.bpm;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C1", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
+
         this.initialized = true;
     }
 
@@ -135,6 +151,40 @@ class AudioEngine {
         return () => {
             this.listeners = this.listeners.filter(cb => cb !== callback);
         };
+    }
+
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    setBpm(bpm) {
+        this.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            if (Tone.Transport.state !== 'started' || this.noteListeners.length === 0) {
+               Tone.Transport.stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            if (Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+            }
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
     }
 
     subscribeToNotes(callback) {

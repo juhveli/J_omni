@@ -1,8 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomePlaying, setMetronomePlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 100);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleMetronomeToggle = () => {
+    const isPlaying = AudioEngine.toggleMetronome();
+    setMetronomePlaying(isPlaying);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setBpm(newBpm);
+  };
+
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -69,6 +92,30 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             </div>
           </div>
         )}
+
+
+        <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <button
+                  className={`control-btn ${metronomePlaying ? 'active' : ''}`}
+                  onClick={handleMetronomeToggle}
+                  style={{ backgroundColor: flash ? 'white' : '' }}
+                >
+                    ⏱️ {metronomePlaying ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input
+                    type="range"
+                    min="60"
+                    max="240"
+                    value={bpm}
+                    onChange={handleBpmChange}
+                  />
+                  <span>{bpm}</span>
+                </div>
+            </div>
+         </div>
 
         <div className="control-group">
             <h3>Fun</h3>
