@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -171,6 +171,7 @@ const LayerManager = ({ isAudioStarted }) => {
                         const isMutedBySolo = soloLayerId !== null && !isSolo;
                         const effectiveMuted = layer.muted || isMutedBySolo;
 
+                        // TODO: [Tech Debt] Extract layer item render block into a separate `LayerItem.jsx` component to improve maintainability and performance via `React.memo`.
                         return (
                             <div key={layer.id} className={`layer-item ${effectiveMuted ? 'muted' : ''} ${isSolo ? 'soloed' : ''}`}>
                                 <div className="layer-info">

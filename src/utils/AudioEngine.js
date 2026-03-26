@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,10 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // MIDI state
+        this.midiEnabled = false;
+        this.midiAccess = null;
     }
 
     async initialize() {
@@ -130,17 +134,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -172,6 +176,67 @@ class AudioEngine {
             this.setInstrument(this.currentInstrument);
         } else {
             this._setLoading(false);
+        }
+    }
+
+    // --- MIDI ---
+
+    async toggleMIDI() {
+        if (!navigator.requestMIDIAccess) {
+            console.warn("Web MIDI API not supported in this browser.");
+            return false;
+        }
+
+        if (this.midiEnabled) {
+            // Disable MIDI
+            if (this.midiAccess) {
+                this.midiAccess.inputs.forEach((input) => {
+                    input.onmidimessage = null;
+                });
+            }
+            this.midiEnabled = false;
+            console.log("MIDI Disabled");
+            return false;
+        } else {
+            // Enable MIDI
+            try {
+                this.midiAccess = await navigator.requestMIDIAccess();
+                this.midiAccess.inputs.forEach((input) => {
+                    input.onmidimessage = this._handleMIDIMessage.bind(this);
+                });
+
+                this.midiAccess.onstatechange = (e) => {
+                    if (e.port.type === 'input') {
+                        if (e.port.state === 'connected') {
+                            e.port.onmidimessage = this._handleMIDIMessage.bind(this);
+                        }
+                    }
+                };
+
+                this.midiEnabled = true;
+                console.log("MIDI Enabled");
+                return true;
+            } catch (err) {
+                console.error("MIDI Access Denied or Failed", err);
+                return false;
+            }
+        }
+    }
+
+    _handleMIDIMessage(message) {
+        if (!this.initialized) return;
+
+        const [command, noteNum, velocity] = message.data;
+        const noteName = Tone.Frequency(noteNum, "midi").toNote();
+
+        // Note on
+        if (command === 144 && velocity > 0) {
+            // TODO: [Feature] Web MIDI Velocity Sensitivity: Pass `velocity` to `startNote` to affect volume dynamically based on how hard the key is pressed.
+            this.startNote(noteName);
+        }
+        // Note off or Note on with 0 velocity
+        else if (command === 128 || (command === 144 && velocity === 0)) {
+            this.stopNote(noteName);
         }
     }
 
