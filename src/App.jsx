@@ -14,6 +14,7 @@ function App() {
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
+  const [midiEnabled, setMidiEnabled] = useState(false)
 
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
@@ -84,6 +85,8 @@ function App() {
                 setScale={setCurrentScale}
                 soundType={soundType}
                 setSoundType={handleSoundTypeChange}
+                midiEnabled={midiEnabled}
+                setMidiEnabled={setMidiEnabled}
               />
               <InstrumentPad
                 currentScale={currentScale}

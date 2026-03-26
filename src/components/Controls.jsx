@@ -2,10 +2,15 @@ import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, midiEnabled, setMidiEnabled }) => {
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMidiToggle = async () => {
+    const enabled = await AudioEngine.toggleMIDI();
+    setMidiEnabled(enabled);
   };
 
   return (
@@ -75,6 +80,18 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>MIDI</h3>
+            <div className="toggle-group">
+                <button
+                  className={`control-btn ${midiEnabled ? 'active' : ''}`}
+                  onClick={handleMidiToggle}
+                >
+                    {midiEnabled ? '🔌 MIDI ON' : '🔌 MIDI OFF'}
                 </button>
             </div>
          </div>
