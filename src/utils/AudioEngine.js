@@ -43,6 +43,7 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
+        // TODO: Add Web MIDI Velocity Sensitivity.
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
 

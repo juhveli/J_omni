@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -16,57 +16,65 @@ const COLORS = {
 
 const SCALES = {
   simple: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A' },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S' },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D' },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F' },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G' },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H' },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J' },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K' }
   ],
   full: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'C#4', color: COLORS.black, label: 'C#' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'D#4', color: COLORS.black, label: 'D#' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'F#4', color: COLORS.black, label: 'F#' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'G#4', color: COLORS.black, label: 'G#' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'A#4', color: COLORS.black, label: 'A#' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A' },
+    { note: 'C#4', color: COLORS.black, label: 'C#', shortcut: 'W' },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S' },
+    { note: 'D#4', color: COLORS.black, label: 'D#', shortcut: 'E' },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D' },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F' },
+    { note: 'F#4', color: COLORS.black, label: 'F#', shortcut: 'T' },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G' },
+    { note: 'G#4', color: COLORS.black, label: 'G#', shortcut: 'Y' },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H' },
+    { note: 'A#4', color: COLORS.black, label: 'A#', shortcut: 'U' },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J' },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K' }
   ]
 };
 
 const DRUMS = [
-  { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
-  { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
-  { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
-  { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
-  { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
+  { note: 'C2', color: COLORS.C, label: '🥁', shortcut: 'A' }, // Kick
+  { note: 'D2', color: COLORS.D, label: '💥', shortcut: 'S' }, // Snare
+  { note: 'E2', color: COLORS.E, label: '🎩', shortcut: 'D' }, // HiHat
+  { note: 'F2', color: COLORS.F, label: '✨', shortcut: 'F' }, // Crash
+  { note: 'G2', color: COLORS.G, label: '🥢', shortcut: 'G' }  // Tom/Sticks
 ];
+
+const SIMPLE_KEYS_MAP = {
+  'a': 0, 's': 1, 'd': 2, 'f': 3, 'g': 4, 'h': 5, 'j': 6, 'k': 7, 'l': 8
+};
+
+const FULL_KEYS_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
-  let notes;
-  if (currentInstrument === 'drums') {
-    notes = DRUMS;
-  } else {
-    notes = SCALES[currentScale] || SCALES.simple;
-  }
+  const notes = useMemo(() => {
+    if (currentInstrument === 'drums') {
+      return DRUMS;
+    }
+    return SCALES[currentScale] || SCALES.simple;
+  }, [currentInstrument, currentScale]);
 
-  const handleStart = (note) => {
+  const handleStart = useCallback((note) => {
     AudioEngine.startNote(note);
-  };
+  }, []);
 
-  const handleStop = (note) => {
+  const handleStop = useCallback((note) => {
     AudioEngine.stopNote(note);
-  };
+  }, []);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
@@ -87,18 +95,17 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.repeat) return;
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
 
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP[key] !== undefined ? SIMPLE_KEYS_MAP[key] : -1;
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -109,17 +116,17 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     const handleKeyUp = (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP[key] !== undefined ? SIMPLE_KEYS_MAP[key] : -1;
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -140,9 +147,10 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handleStart, handleStop]);
 
   return (
+    // TODO: Enable WebRTC Collaboration for multiplayer jam sessions.
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
       {notes.map((n) => (
         <NoteButton
@@ -150,6 +158,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           note={n.note}
           color={n.color}
           label={n.label}
+          shortcut={n.shortcut}
           onStart={handleStart}
           onStop={handleStop}
           forceActive={activeNotes.has(n.note)}

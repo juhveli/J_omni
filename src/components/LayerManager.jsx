@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -123,6 +123,7 @@ const LayerManager = ({ isAudioStarted }) => {
 
     return (
         <div className="layer-manager">
+            {/* TODO: Extract layer items into a separate component and use React.memo for optimization. */}
             <div className="layer-header">
                 <h3>🎚️ Layers ({layers.length})</h3>
                 <div className="layer-actions">
