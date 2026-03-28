@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 
+// TODO: Add Web MIDI Velocity Sensitivity
 class AudioEngine {
     constructor() {
         this.isLoading = false;
@@ -35,6 +36,11 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.onMetronomeTick = null;
     }
 
     async initialize() {
@@ -126,6 +132,19 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // Initialize Metronome
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C1", "8n", time);
+            if (this.onMetronomeTick) {
+                Tone.Draw.schedule(() => {
+                    this.onMetronomeTick();
+                }, time);
+            }
+        }, "4n");
+        Tone.Transport.bpm.value = 120;
+
         this.initialized = true;
     }
 
@@ -142,6 +161,29 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    // --- METRONOME ---
+    subscribeToMetronome(callback) {
+        this.onMetronomeTick = callback;
+        return () => {
+            this.onMetronomeTick = null;
+        };
+    }
+
+    setBPM(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    toggleMetronome(isPlaying) {
+        if (!this.initialized) return;
+        if (isPlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
     }
 
     _emitNoteEvent(note, time) {
@@ -296,18 +338,26 @@ class AudioEngine {
     playMelody(melody) {
         if (!this.initialized) return;
 
-        const now = Tone.now();
+        // Clear previous melody events to prevent overlap
+        Tone.Transport.cancel();
+        Tone.Transport.stop();
+
         let cumulativeTime = 0;
 
         melody.forEach(item => {
             const duration = item.duration || "8n";
             const note = item.note;
 
-            // Schedule note
-            this.playNote(note, duration, now + cumulativeTime);
+            // Schedule note relative to transport start
+            Tone.Transport.schedule((time) => {
+                this.playNote(note, duration, time);
+            }, cumulativeTime);
 
             cumulativeTime += Tone.Time(duration).toSeconds();
         });
+
+        // Start transport to play the melody
+        Tone.Transport.start();
     }
 
     /**
