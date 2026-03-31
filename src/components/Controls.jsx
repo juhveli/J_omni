@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [bpm, setBpm] = useState(120);
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [metronomeFlash, setMetronomeFlash] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+        setMetronomeFlash(true);
+        setTimeout(() => setMetronomeFlash(false), 100);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+      AudioEngine.setMetronomeBPM(bpm);
+  }, [bpm]);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+      const isPlaying = AudioEngine.toggleMetronome();
+      setIsMetronomePlaying(isPlaying);
   };
 
   return (
@@ -76,6 +96,30 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group">
+                <button
+                  className={`control-btn ${isMetronomePlaying ? 'active' : ''} ${metronomeFlash ? 'flashing' : ''}`}
+                  onClick={handleMetronomeToggle}
+                  style={metronomeFlash ? { backgroundColor: 'var(--secondary-color)', color: 'var(--bg-color)' } : {}}
+                >
+                    ⏱️ {isMetronomePlaying ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <input
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={bpm}
+                        onChange={(e) => setBpm(Number(e.target.value))}
+                        title={`BPM: ${bpm}`}
+                    />
+                    <span style={{ fontSize: '0.8rem' }}>{bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
