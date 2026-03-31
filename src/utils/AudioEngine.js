@@ -123,10 +123,51 @@ class AudioEngine {
 
 
         // --- SAMPLERS ---
-        // Lazy load the default instrument
-        this._loadPianoSampler();
+        // TODO: Support custom SoundFonts to allow users to import their own instrument samples.
+        // Do not eagerly load samplers - implement lazy loading
+        // The piano sampler will load if it's the current instrument on play
+
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+        this.isMetronomePlaying = false;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            // Flash indicator
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
+
+        this.metronomeListeners = [];
 
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    setMetronomeBPM(bpm) {
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
     }
 
     subscribe(callback) {

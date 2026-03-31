@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
@@ -60,15 +60,16 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     notes = SCALES[currentScale] || SCALES.simple;
   }
 
-  const handleStart = (note) => {
+  const handleStart = useCallback((note) => {
     AudioEngine.startNote(note);
-  };
+  }, []);
 
-  const handleStop = (note) => {
+  const handleStop = useCallback((note) => {
     AudioEngine.stopNote(note);
-  };
+  }, []);
 
   useEffect(() => {
+    // TODO: Add multi-touch support for playing chords on mobile devices.
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
     const unsubscribe = AudioEngine.subscribeToNotes((note) => {
       setActiveNotes(prev => new Set(prev).add(note));
@@ -140,7 +141,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handleStart, handleStop]);
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
