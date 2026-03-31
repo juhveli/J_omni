@@ -46,6 +46,7 @@ class RecordingEngine {
 
         // Create Tone.js Recorder connected to master output
         this.toneRecorder = new Tone.Recorder();
+        // Connect the global destination to the recorder so we can capture all sound
         Tone.getDestination().connect(this.toneRecorder);
 
         // Initialize storage and load persisted layers

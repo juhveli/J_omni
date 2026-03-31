@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBPM = 120;
+        this.metronomeListeners = [];
     }
 
     async initialize() {
@@ -96,35 +102,45 @@ class AudioEngine {
         this.instruments.synthElectricGuitar.volume.value = -10;
 
         // Drum Synths
-        this.instruments.drumSynths.kick = new Tone.MembraneSynth().toDestination();
+        this.instruments.drumSynths.kick = new Tone.MembraneSynth().connect(this.masterLimiter);
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
             noise: { type: 'white' },
             envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.hihat = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.crash = new Tone.MetalSynth({
             envelope: { attack: 0.001, decay: 1, release: 0.01 },
             harmonicity: 5.1,
             modulationIndex: 64,
             resonance: 3000,
             octaves: 1.5
-        }).toDestination();
+        }).connect(this.masterLimiter);
         this.instruments.drumSynths.tom = new Tone.MembraneSynth({
             pitchDecay: 0.05,
             octaves: 4,
             oscillator: { type: "sine" }
-        }).toDestination();
+        }).connect(this.masterLimiter);
 
 
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
+
+        // Metronome
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            this.metronomeListeners.forEach(cb => Tone.Draw.schedule(() => cb(), time));
+        }, "4n");
+        Tone.getTransport().bpm.value = this.metronomeBPM;
 
         this.initialized = true;
     }
@@ -144,18 +160,42 @@ class AudioEngine {
         };
     }
 
-    _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
 
-        if (delay === 0) {
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+
+        if (this.isMetronomePlaying) {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Only stop transport if nothing else is using it, but for now it's fine
+            Tone.getTransport().stop();
+        }
+
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = bpm;
+        Tone.getTransport().bpm.value = bpm;
+    }
+
+    _emitNoteEvent(note, time) {
+        if (!time || time <= Tone.now()) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            setTimeout(() => {
+            Tone.Draw.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
         }
     }
 
