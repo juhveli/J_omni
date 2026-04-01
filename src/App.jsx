@@ -14,6 +14,9 @@ function App() {
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
+  const [isMidiEnabled, setIsMidiEnabled] = useState(false)
+
+  // TODO: Add cloud saving and user authentication for user profiles.
 
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
@@ -84,6 +87,8 @@ function App() {
                 setScale={setCurrentScale}
                 soundType={soundType}
                 setSoundType={handleSoundTypeChange}
+                isMidiEnabled={isMidiEnabled}
+                setIsMidiEnabled={setIsMidiEnabled}
               />
               <InstrumentPad
                 currentScale={currentScale}

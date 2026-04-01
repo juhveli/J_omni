@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,7 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+        this.isMidiEnabled = false;
     }
 
     async initialize() {
@@ -129,18 +130,71 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    // TODO: Add support for uploading and parsing custom SoundFonts.
+
+    async enableMidi() {
+        if (navigator.requestMIDIAccess) {
+            try {
+                const midiAccess = await navigator.requestMIDIAccess();
+                for (let input of midiAccess.inputs.values()) {
+                    input.onmidimessage = this._handleMidiMessage.bind(this);
+                }
+                midiAccess.onstatechange = (e) => {
+                    if (e.port.state === 'connected' && e.port.type === 'input') {
+                        e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                };
+                this.isMidiEnabled = true;
+                return true;
+            } catch (err) {
+                console.error("MIDI access denied or failed", err);
+                return false;
+            }
+        } else {
+            console.warn("Web MIDI API not supported in this browser");
+            return false;
+        }
+    }
+
+    disableMidi() {
+        this.isMidiEnabled = false;
+    }
+
+    _handleMidiMessage(message) {
+        if (!this.isMidiEnabled) return;
+
+        const command = message.data[0];
+        const noteNumber = message.data[1];
+        const velocity = (message.data.length > 2) ? message.data[2] : 0;
+
+        if (command === 144 && velocity > 0) {
+            const note = this._midiNoteToTone(noteNumber);
+            this.startNote(note);
+        } else if (command === 128 || (command === 144 && velocity === 0)) {
+            const note = this._midiNoteToTone(noteNumber);
+            this.stopNote(note);
+        }
+    }
+
+    _midiNoteToTone(midiNote) {
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const octave = Math.floor(midiNote / 12) - 1;
+        const noteName = notes[midiNote % 12];
+        return `${noteName}${octave}`;
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
