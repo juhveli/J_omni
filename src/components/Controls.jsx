@@ -2,10 +2,24 @@ import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, isMidiEnabled, setIsMidiEnabled }) => {
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMidiToggle = async () => {
+    if (!isMidiEnabled) {
+      const success = await AudioEngine.enableMidi();
+      if (success) {
+        setIsMidiEnabled(true);
+      } else {
+        alert("MIDI could not be enabled. Please check browser permissions and connections.");
+      }
+    } else {
+        AudioEngine.disableMidi();
+        setIsMidiEnabled(false);
+    }
   };
 
   return (
@@ -75,6 +89,13 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+                <button
+                  className={`control-btn ${isMidiEnabled ? 'active' : ''}`}
+                  onClick={handleMidiToggle}
+                  title="Enable Web MIDI API"
+                >
+                  🎹 MIDI {isMidiEnabled ? 'On' : 'Off'}
                 </button>
             </div>
          </div>
