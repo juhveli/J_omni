@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sparkle from './Sparkle';
 
-const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
+const NoteButton = React.memo(({ note, label, color, shortcut, onStart, onStop, forceActive }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
 
@@ -62,9 +62,10 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
       aria-label={`Play note ${label}`}
     >
       <span className="note-label">{label}</span>
+      {shortcut && <span className="keyboard-hint">{shortcut}</span>}
       {sparkles.map(s => <Sparkle key={s.id} style={s.style} />)}
     </button>
   );
-};
+});
 
 export default NoteButton;

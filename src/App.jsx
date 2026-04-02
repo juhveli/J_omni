@@ -15,6 +15,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
 
+  // TODO: [Feature] Cloud saves: Implement user authentication and cloud storage to save user preferences, custom layers, and recorded sessions across devices.
+
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
     return unsubscribe;
