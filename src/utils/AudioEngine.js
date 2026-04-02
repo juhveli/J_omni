@@ -194,6 +194,7 @@ class AudioEngine {
         }
     }
 
+    // TODO: [Feature] Custom SoundFonts: Allow users to upload or select custom SoundFont (.sf2) files to expand the instrument library beyond the default set.
     // --- Sampler Loaders ---
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
