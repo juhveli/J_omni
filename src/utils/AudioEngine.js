@@ -5,6 +5,7 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = [];
 
         this.instruments = {
             // Samplers
@@ -122,6 +123,24 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+
+            // Emit tick event for visual feedback, calculating the delay to match audio timing
+            const now = Tone.now();
+            const delay = time ? Math.max(0, (time - now) * 1000) : 0;
+            if (delay === 0) {
+                this.metronomeListeners.forEach(cb => cb());
+            } else {
+                setTimeout(() => {
+                    this.metronomeListeners.forEach(cb => cb());
+                }, delay);
+            }
+        }, "4n");
+        Tone.Transport.bpm.value = 120; // Default BPM
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -142,6 +161,37 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome(bpm) {
+        if (!this.initialized) return false;
+
+        if (bpm) {
+            Tone.Transport.bpm.value = bpm;
+        }
+
+        if (Tone.Transport.state !== 'started') {
+            Tone.Transport.start();
+        }
+
+        if (this.metronomeLoop.state === 'started') {
+            this.metronomeLoop.stop();
+            return false;
+        } else {
+            this.metronomeLoop.start(0);
+            return true;
+        }
+    }
+
+    setMetronomeBPM(bpm) {
+        Tone.Transport.bpm.value = bpm;
     }
 
     _emitNoteEvent(note, time) {
@@ -448,4 +498,5 @@ class AudioEngine {
     }
 }
 
+// TODO: [Feature] Support custom SoundFonts
 export default new AudioEngine();
