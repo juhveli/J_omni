@@ -16,42 +16,48 @@ const COLORS = {
 
 const SCALES = {
   simple: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A', isSharp: false },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S', isSharp: false },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D', isSharp: false },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F', isSharp: false },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G', isSharp: false },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H', isSharp: false },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J', isSharp: false },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K', isSharp: false }
   ],
   full: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'C#4', color: COLORS.black, label: 'C#' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'D#4', color: COLORS.black, label: 'D#' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'F#4', color: COLORS.black, label: 'F#' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'G#4', color: COLORS.black, label: 'G#' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'A#4', color: COLORS.black, label: 'A#' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A', isSharp: false },
+    { note: 'C#4', color: COLORS.black, label: 'C#', shortcut: 'W', isSharp: true },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S', isSharp: false },
+    { note: 'D#4', color: COLORS.black, label: 'D#', shortcut: 'E', isSharp: true },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D', isSharp: false },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F', isSharp: false },
+    { note: 'F#4', color: COLORS.black, label: 'F#', shortcut: 'T', isSharp: true },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G', isSharp: false },
+    { note: 'G#4', color: COLORS.black, label: 'G#', shortcut: 'Y', isSharp: true },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H', isSharp: false },
+    { note: 'A#4', color: COLORS.black, label: 'A#', shortcut: 'U', isSharp: true },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J', isSharp: false },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K', isSharp: false }
   ]
 };
 
 const DRUMS = [
-  { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
-  { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
-  { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
-  { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
-  { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
+  { note: 'C2', color: COLORS.C, label: '🥁', shortcut: 'A', isSharp: false }, // Kick
+  { note: 'D2', color: COLORS.D, label: '💥', shortcut: 'S', isSharp: false }, // Snare
+  { note: 'E2', color: COLORS.E, label: '🎩', shortcut: 'D', isSharp: false }, // HiHat
+  { note: 'F2', color: COLORS.F, label: '✨', shortcut: 'F', isSharp: false }, // Crash
+  { note: 'G2', color: COLORS.G, label: '🥢', shortcut: 'G', isSharp: false }  // Tom/Sticks
 ];
+
+const SIMPLE_KEYS_MAP = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const FULL_KEYS_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
+  // TODO: Implement multi-touch support
 
   let notes;
   if (currentInstrument === 'drums') {
@@ -88,17 +94,18 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     const handleKeyDown = (e) => {
       if (e.repeat) return;
 
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -109,17 +116,18 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     const handleKeyUp = (e) => {
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -150,6 +158,8 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           note={n.note}
           color={n.color}
           label={n.label}
+          isSharp={n.isSharp}
+          shortcut={n.shortcut}
           onStart={handleStart}
           onStop={handleStop}
           forceActive={activeNotes.has(n.note)}
