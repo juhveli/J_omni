@@ -5,6 +5,12 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = [];
+
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
 
         this.instruments = {
             // Samplers
@@ -122,11 +128,58 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.bpm;
+
         // --- SAMPLERS ---
+        // TODO: Add support for custom SoundFonts
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.push(callback);
+        return () => {
+            this.metronomeListeners = this.metronomeListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.getTransport().stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        if (!this.initialized) return;
+        this.bpm = bpm;
+        Tone.getTransport().bpm.value = bpm;
+    }
+
+    getBpm() {
+        return this.bpm;
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomePlaying;
     }
 
     subscribe(callback) {
