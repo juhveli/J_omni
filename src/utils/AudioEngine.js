@@ -35,6 +35,13 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
+        this.metronomeListeners = new Set();
     }
 
     async initialize() {
@@ -123,8 +130,22 @@ class AudioEngine {
 
 
         // --- SAMPLERS ---
+        // TODO: Allow users to upload and use custom SoundFonts for instruments.
         // Lazy load the default instrument
         this._loadPianoSampler();
+
+        // Removed eager loading of guitar sampler if it was here.
+        // Metronome initialization
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+        Tone.Transport.bpm.value = this.bpm;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb());
+            }, time);
+        }, "4n");
 
         this.initialized = true;
     }
@@ -142,6 +163,34 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            if (Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+            }
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBpm(bpm) {
+        this.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
     }
 
     _emitNoteEvent(note, time) {
