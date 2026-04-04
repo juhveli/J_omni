@@ -16,41 +16,42 @@ const COLORS = {
 
 const SCALES = {
   simple: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A' },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S' },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D' },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F' },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G' },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H' },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J' },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K' }
   ],
   full: [
-    { note: 'C4', color: COLORS.C, label: 'C' },
-    { note: 'C#4', color: COLORS.black, label: 'C#' },
-    { note: 'D4', color: COLORS.D, label: 'D' },
-    { note: 'D#4', color: COLORS.black, label: 'D#' },
-    { note: 'E4', color: COLORS.E, label: 'E' },
-    { note: 'F4', color: COLORS.F, label: 'F' },
-    { note: 'F#4', color: COLORS.black, label: 'F#' },
-    { note: 'G4', color: COLORS.G, label: 'G' },
-    { note: 'G#4', color: COLORS.black, label: 'G#' },
-    { note: 'A4', color: COLORS.A, label: 'A' },
-    { note: 'A#4', color: COLORS.black, label: 'A#' },
-    { note: 'B4', color: COLORS.B, label: 'B' },
-    { note: 'C5', color: COLORS.C, label: 'C' }
+    { note: 'C4', color: COLORS.C, label: 'C', shortcut: 'A' },
+    { note: 'C#4', color: COLORS.black, label: 'C#', shortcut: 'W' },
+    { note: 'D4', color: COLORS.D, label: 'D', shortcut: 'S' },
+    { note: 'D#4', color: COLORS.black, label: 'D#', shortcut: 'E' },
+    { note: 'E4', color: COLORS.E, label: 'E', shortcut: 'D' },
+    { note: 'F4', color: COLORS.F, label: 'F', shortcut: 'F' },
+    { note: 'F#4', color: COLORS.black, label: 'F#', shortcut: 'T' },
+    { note: 'G4', color: COLORS.G, label: 'G', shortcut: 'G' },
+    { note: 'G#4', color: COLORS.black, label: 'G#', shortcut: 'Y' },
+    { note: 'A4', color: COLORS.A, label: 'A', shortcut: 'H' },
+    { note: 'A#4', color: COLORS.black, label: 'A#', shortcut: 'U' },
+    { note: 'B4', color: COLORS.B, label: 'B', shortcut: 'J' },
+    { note: 'C5', color: COLORS.C, label: 'C', shortcut: 'K' }
   ]
 };
 
 const DRUMS = [
-  { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick
-  { note: 'D2', color: COLORS.D, label: '💥' }, // Snare
-  { note: 'E2', color: COLORS.E, label: '🎩' }, // HiHat
-  { note: 'F2', color: COLORS.F, label: '✨' }, // Crash
-  { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
+  { note: 'C2', color: COLORS.C, label: '🥁', shortcut: 'A' }, // Kick
+  { note: 'D2', color: COLORS.D, label: '💥', shortcut: 'S' }, // Snare
+  { note: 'E2', color: COLORS.E, label: '🎩', shortcut: 'D' }, // HiHat
+  { note: 'F2', color: COLORS.F, label: '✨', shortcut: 'F' }, // Crash
+  { note: 'G2', color: COLORS.G, label: '🥢', shortcut: 'G' }  // Tom/Sticks
 ];
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  // TODO: Add multi-touch support for playing chords on touchscreen devices.
   const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
@@ -60,13 +61,13 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     notes = SCALES[currentScale] || SCALES.simple;
   }
 
-  const handleStart = (note) => {
+  const handleStart = React.useCallback((note) => {
     AudioEngine.startNote(note);
-  };
+  }, []);
 
-  const handleStop = (note) => {
+  const handleStop = React.useCallback((note) => {
     AudioEngine.stopNote(note);
-  };
+  }, []);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
@@ -140,7 +141,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handleStart, handleStop]);
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
@@ -150,6 +151,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
           note={n.note}
           color={n.color}
           label={n.label}
+          shortcut={n.shortcut}
           onStart={handleStart}
           onStop={handleStop}
           forceActive={activeNotes.has(n.note)}
