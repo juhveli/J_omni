@@ -50,6 +50,8 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+// TODO: [Enhancement] Add multi-touch support for playing chords on mobile devices.
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
