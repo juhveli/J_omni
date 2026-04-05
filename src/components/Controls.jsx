@@ -2,7 +2,7 @@ import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
-const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType, isMidiEnabled, onMidiToggle }) => {
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -71,10 +71,17 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
         )}
 
         <div className="control-group">
-            <h3>Fun</h3>
+            <h3>Fun & Extras</h3>
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+                <button
+                  className={`control-btn ${isMidiEnabled ? 'active' : ''}`}
+                  onClick={onMidiToggle}
+                  aria-pressed={isMidiEnabled}
+                >
+                    🎹 MIDI {isMidiEnabled ? 'On' : 'Off'}
                 </button>
             </div>
          </div>

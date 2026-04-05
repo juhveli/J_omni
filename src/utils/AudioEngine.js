@@ -35,6 +35,68 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // MIDI State
+        this.midiAccess = null;
+        this.isMidiEnabled = false;
+        this.midiInputs = [];
+        this._handleMidiMessage = this._handleMidiMessage.bind(this);
+    }
+
+    // TODO: [Feature] Allow users to load custom SoundFonts for samplers.
+
+    async enableMidi() {
+        try {
+            if (navigator.requestMIDIAccess) {
+                this.midiAccess = await navigator.requestMIDIAccess();
+                this.isMidiEnabled = true;
+
+                for (const input of this.midiAccess.inputs.values()) {
+                    input.onmidimessage = this._handleMidiMessage;
+                    this.midiInputs.push(input);
+                }
+                console.log("MIDI Enabled");
+                return true;
+            } else {
+                console.warn("Web MIDI API not supported in this browser.");
+                return false;
+            }
+        } catch (err) {
+            console.error("Failed to enable MIDI", err);
+            return false;
+        }
+    }
+
+    disableMidi() {
+        this.isMidiEnabled = false;
+        for (const input of this.midiInputs) {
+            input.onmidimessage = null;
+        }
+        this.midiInputs = [];
+        console.log("MIDI Disabled");
+    }
+
+    _handleMidiMessage(event) {
+        if (!this.isMidiEnabled) return;
+
+        // [status, noteNumber, velocity]
+        const data = event.data;
+        if (data.length < 3) return;
+
+        const cmd = data[0] >> 4;
+
+        let noteNumber = data[1];
+        let velocity = data[2];
+
+        // with MIDI, note on with velocity 0 is often interpreted as note off
+        if (cmd === 8 || ((cmd === 9) && (velocity === 0))) { // note off
+            // Map note number to string e.g. 60 -> C4
+            const noteString = Tone.Frequency(noteNumber, "midi").toNote();
+            this.stopNote(noteString);
+        } else if (cmd === 9) { // note on
+            const noteString = Tone.Frequency(noteNumber, "midi").toNote();
+            this.startNote(noteString);
+        }
     }
 
     async initialize() {

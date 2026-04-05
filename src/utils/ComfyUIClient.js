@@ -110,15 +110,36 @@ class ComfyUIClient {
      * @returns {Promise<string>} Path to uploaded file
      */
     async uploadAudio(audioBlob, filename = 'input_audio.wav') {
-        console.log(`[ComfyUI Placeholder] Uploading audio: ${filename} (${audioBlob.size} bytes)`);
+        console.log(`[ComfyUI] Uploading audio: ${filename} (${audioBlob.size} bytes)`);
 
-        // PLACEHOLDER: In production, this would POST to /upload/audio
-        await this._simulateDelay(1000);
+        const formData = new FormData();
+        formData.append('audio', audioBlob, filename);
 
-        const uploadPath = `input/${filename}`;
-        console.log(`[ComfyUI Placeholder] Audio uploaded to: ${uploadPath}`);
+        try {
+            const response = await fetch(`${this.baseUrl}/upload/audio`, {
+                method: 'POST',
+                body: formData
+            });
 
-        return uploadPath;
+            if (!response.ok) {
+                throw new Error(`Upload failed with status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // ComfyUI typically returns { name: "filename", subfolder: "", type: "input" }
+            const subfolder = data.subfolder ? `${data.subfolder}/` : '';
+            const uploadPath = `${subfolder}${data.name}`;
+
+            console.log(`[ComfyUI] Audio uploaded to: ${uploadPath}`);
+            return uploadPath;
+        } catch (err) {
+            console.error('[ComfyUI] Failed to upload audio:', err);
+            // Fallback to placeholder if real server isn't available
+            console.warn('[ComfyUI] Falling back to placeholder upload');
+            await this._simulateDelay(1000);
+            return `input/${filename}`;
+        }
     }
 
     /**

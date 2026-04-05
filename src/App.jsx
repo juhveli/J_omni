@@ -14,6 +14,7 @@ function App() {
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
+  const [isMidiEnabled, setIsMidiEnabled] = useState(false)
 
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
@@ -34,6 +35,20 @@ function App() {
     setSoundType(type)
     AudioEngine.setSoundType(type)
   }
+
+  const handleMidiToggle = async () => {
+    if (isMidiEnabled) {
+      AudioEngine.disableMidi();
+      setIsMidiEnabled(false);
+    } else {
+      const success = await AudioEngine.enableMidi();
+      if (success) {
+        setIsMidiEnabled(true);
+      }
+    }
+  }
+
+  // TODO: [Feature] Implement user authentication for cloud saving of recorded layers.
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
@@ -84,6 +99,8 @@ function App() {
                 setScale={setCurrentScale}
                 soundType={soundType}
                 setSoundType={handleSoundTypeChange}
+                isMidiEnabled={isMidiEnabled}
+                onMidiToggle={handleMidiToggle}
               />
               <InstrumentPad
                 currentScale={currentScale}
