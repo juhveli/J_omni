@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [beatPulse, setBeatPulse] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome((beatType) => {
+      setBeatPulse(beatType);
+      setTimeout(() => setBeatPulse(''), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleToggleMetronome = () => {
+    const isPlaying = AudioEngine.toggleMetronome();
+    setIsMetronomePlaying(isPlaying);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setBpm(newBpm);
   };
 
   return (
@@ -76,6 +98,31 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group metronome-group">
+            <h3>Metronome</h3>
+            <div className="metronome-controls">
+                <button
+                  className={`control-btn metronome-btn ${isMetronomePlaying ? 'active' : ''} ${beatPulse}`}
+                  onClick={handleToggleMetronome}
+                  aria-pressed={isMetronomePlaying}
+                >
+                    ⏱️ {isMetronomePlaying ? 'Stop' : 'Start'}
+                </button>
+                <div className="bpm-slider-container">
+                    <input
+                        type="range"
+                        min="40"
+                        max="240"
+                        value={bpm}
+                        onChange={handleBpmChange}
+                        className="bpm-slider"
+                        title={`${bpm} BPM`}
+                    />
+                    <span className="bpm-label">{bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
