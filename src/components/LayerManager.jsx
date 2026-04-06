@@ -1,6 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import RecordingEngine from '../utils/RecordingEngine';
 
+const LayerItem = React.memo(({ layer, index, isSolo, effectiveMuted, onPlay, onStop, onToggleMute, onToggleSolo, onDelete, onVolumeChange }) => {
+    const formatDuration = (ms) => {
+        const seconds = Math.floor(ms / 1000);
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className={`layer-item ${effectiveMuted ? 'muted' : ''} ${isSolo ? 'soloed' : ''}`}>
+            {/* TODO: Implement waveform visualizer for individual layers to see audio amplitude */}
+            <div className="layer-info">
+                <span className="layer-number">{index + 1}</span>
+                <span className="layer-name">{layer.name}</span>
+                <span className="layer-duration">{formatDuration(layer.duration)}</span>
+            </div>
+
+            <div className="layer-volume-section">
+                <div className="volume-bar-container">
+                    <div
+                        className="volume-bar"
+                        style={{ width: `${Math.min(100, layer.volume * 100)}%` }}
+                    />
+                    {layer.volume > 1 && (
+                        <div
+                            className="volume-bar-boost"
+                            style={{ width: `${(layer.volume - 1) * 100}%` }}
+                        />
+                    )}
+                </div>
+                <input
+                    type="range"
+                    className="volume-slider"
+                    min="0"
+                    max="1.5"
+                    step="0.01"
+                    value={layer.volume}
+                    onChange={(e) => onVolumeChange(layer.id, parseFloat(e.target.value))}
+                    title={`Volume: ${Math.round(layer.volume * 100)}%`}
+                />
+                <span className="volume-label">{Math.round(layer.volume * 100)}%</span>
+            </div>
+
+            <div className="layer-controls">
+                <button
+                    className="layer-btn play"
+                    onClick={() => onPlay(layer.id)}
+                    title="Play"
+                >
+                    ▶️
+                </button>
+                <button
+                    className="layer-btn stop"
+                    onClick={() => onStop(layer.id)}
+                    title="Stop"
+                >
+                    ⏹️
+                </button>
+                <button
+                    className={`layer-btn mute ${effectiveMuted ? 'active' : ''}`}
+                    onClick={() => onToggleMute(layer.id)}
+                    title={layer.muted ? 'Unmute' : 'Mute'}
+                >
+                    {layer.muted ? '🔇' : '🔊'}
+                </button>
+                <button
+                    className={`layer-btn solo ${isSolo ? 'active' : ''}`}
+                    onClick={() => onToggleSolo(layer.id)}
+                    title={isSolo ? 'Unsolo' : 'Solo'}
+                >
+                    🎧
+                </button>
+                <button
+                    className="layer-btn delete"
+                    onClick={() => onDelete(layer.id)}
+                    title="Delete"
+                >
+                    🗑️
+                </button>
+            </div>
+        </div>
+    );
+});
+
 const LayerManager = ({ isAudioStarted }) => {
     const [layers, setLayers] = useState([]);
     const [playingAll, setPlayingAll] = useState(false);
@@ -20,7 +104,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -112,13 +196,6 @@ const LayerManager = ({ isAudioStarted }) => {
         }
     };
 
-    const formatDuration = (ms) => {
-        const seconds = Math.floor(ms / 1000);
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
     if (!isAudioStarted) return null;
 
     return (
@@ -172,77 +249,20 @@ const LayerManager = ({ isAudioStarted }) => {
                         const effectiveMuted = layer.muted || isMutedBySolo;
 
                         return (
-                            <div key={layer.id} className={`layer-item ${effectiveMuted ? 'muted' : ''} ${isSolo ? 'soloed' : ''}`}>
-                                <div className="layer-info">
-                                    <span className="layer-number">{index + 1}</span>
-                                    <span className="layer-name">{layer.name}</span>
-                                    <span className="layer-duration">{formatDuration(layer.duration)}</span>
-                                </div>
-
-                                <div className="layer-volume-section">
-                                    <div className="volume-bar-container">
-                                        <div
-                                            className="volume-bar"
-                                            style={{ width: `${Math.min(100, layer.volume * 100)}%` }}
-                                        />
-                                        {layer.volume > 1 && (
-                                            <div
-                                                className="volume-bar-boost"
-                                                style={{ width: `${(layer.volume - 1) * 100}%` }}
-                                            />
-                                        )}
-                                    </div>
-                                    <input
-                                        type="range"
-                                        className="volume-slider"
-                                        min="0"
-                                        max="1.5"
-                                        step="0.01"
-                                        value={layer.volume}
-                                        onChange={(e) => handleVolumeChange(layer.id, parseFloat(e.target.value))}
-                                        title={`Volume: ${Math.round(layer.volume * 100)}%`}
-                                    />
-                                    <span className="volume-label">{Math.round(layer.volume * 100)}%</span>
-                                </div>
-
-                                <div className="layer-controls">
-                                    <button
-                                        className="layer-btn play"
-                                        onClick={() => handlePlayLayer(layer.id)}
-                                        title="Play"
-                                    >
-                                        ▶️
-                                    </button>
-                                    <button
-                                        className="layer-btn stop"
-                                        onClick={() => handleStopLayer(layer.id)}
-                                        title="Stop"
-                                    >
-                                        ⏹️
-                                    </button>
-                                    <button
-                                        className={`layer-btn mute ${effectiveMuted ? 'active' : ''}`}
-                                        onClick={() => handleToggleMute(layer.id)}
-                                        title={layer.muted ? 'Unmute' : 'Mute'}
-                                    >
-                                        {layer.muted ? '🔇' : '🔊'}
-                                    </button>
-                                    <button
-                                        className={`layer-btn solo ${isSolo ? 'active' : ''}`}
-                                        onClick={() => handleToggleSolo(layer.id)}
-                                        title={isSolo ? 'Unsolo' : 'Solo'}
-                                    >
-                                        🎧
-                                    </button>
-                                    <button
-                                        className="layer-btn delete"
-                                        onClick={() => handleDeleteLayer(layer.id)}
-                                        title="Delete"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
+                            <LayerItem
+                                key={layer.id}
+                                layer={layer}
+                                index={index}
+                                isSolo={isSolo}
+                                isMutedBySolo={isMutedBySolo}
+                                effectiveMuted={effectiveMuted}
+                                onPlay={handlePlayLayer}
+                                onStop={handleStopLayer}
+                                onToggleMute={handleToggleMute}
+                                onToggleSolo={handleToggleSolo}
+                                onDelete={handleDeleteLayer}
+                                onVolumeChange={handleVolumeChange}
+                            />
                         );
                     })}
                 </div>

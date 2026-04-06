@@ -389,6 +389,8 @@ class RecordingEngine {
             const gainNode = offlineCtx.createGain();
             gainNode.gain.value = layer.volume;
 
+        // TODO: Add spatial audio (3D panning) for layers to create a wider stereo mix.
+
             source.connect(gainNode);
             gainNode.connect(offlineCtx.destination);
             source.start(0);
