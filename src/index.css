@@ -288,6 +288,24 @@ header h1 {
   transform: scale(1.05) rotate(0deg);
 }
 
+.metronome-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bpm-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--secondary-color);
+}
+
+.bpm-slider {
+  accent-color: var(--secondary-color);
+}
+
 /* Instrument Buttons Special Styling */
 .instrument-btn {
   flex-direction: column;

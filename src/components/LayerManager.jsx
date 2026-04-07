@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -121,6 +121,7 @@ const LayerManager = ({ isAudioStarted }) => {
 
     if (!isAudioStarted) return null;
 
+    // TODO: Implement individual layer waveform visualizers
     return (
         <div className="layer-manager">
             <div className="layer-header">
