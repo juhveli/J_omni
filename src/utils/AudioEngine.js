@@ -3,8 +3,14 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
 
         this.instruments = {
             // Samplers
@@ -43,8 +49,31 @@ class AudioEngine {
         await Tone.start();
         console.log("Audio Engine Started");
 
+        // Set global Tone transport defaults
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.1 }
+        }).connect(this.masterLimiter);
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Emphasize the first beat
+            const isFirstBeat = (Tone.Transport.position.split(':')[1] === '0');
+            const note = isFirstBeat ? "C4" : "C3";
+            const velocity = isFirstBeat ? 1 : 0.5;
+            this.metronomeSynth.triggerAttackRelease(note, "32n", time, velocity);
+
+            // Emit event for UI feedback via Tone.Draw to sync with audio thread
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb(isFirstBeat));
+            }, time);
+        }, "4n");
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +159,24 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
+        };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
         };
     }
 
@@ -445,6 +481,34 @@ class AudioEngine {
             case 'electricGuitar': return inst.synthElectricGuitar;
             default: return inst.synthPiano;
         }
+    }
+
+    // --- Metronome Controls ---
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        this.metronomeBpm = Math.max(40, Math.min(240, bpm));
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(this.metronomeBpm, 0.1);
+        }
+        return this.metronomeBpm;
+    }
+
+    getBpm() {
+        return this.metronomeBpm;
     }
 }
 
