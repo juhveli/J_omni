@@ -126,7 +126,44 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this._initMidi();
+
         this.initialized = true;
+    }
+
+    _initMidi() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then((midiAccess) => {
+                const inputs = midiAccess.inputs.values();
+                for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+                    input.value.onmidimessage = this._handleMidiMessage.bind(this);
+                }
+                midiAccess.onstatechange = (e) => {
+                    if (e.port.type === 'input' && e.port.state === 'connected') {
+                        e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                };
+                console.log("Web MIDI API initialized");
+            }).catch(console.warn);
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMidiMessage(event) {
+        const [status, noteNumber, velocity] = event.data;
+        const command = status >> 4;
+
+        // Note On
+        if (command === 9 && velocity > 0) {
+            const frequency = Tone.Frequency(noteNumber, "midi").toNote();
+            this.startNote(frequency);
+        }
+        // Note Off or Note On with 0 velocity
+        else if (command === 8 || (command === 9 && velocity === 0)) {
+            const frequency = Tone.Frequency(noteNumber, "midi").toNote();
+            this.stopNote(frequency);
+        }
     }
 
     subscribe(callback) {

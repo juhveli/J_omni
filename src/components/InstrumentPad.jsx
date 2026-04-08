@@ -50,7 +50,17 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+const SIMPLE_KEYS_MAP = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'].reduce((acc, key, idx) => {
+  acc[key] = idx;
+  return acc;
+}, {});
+
+const FULL_KEYS_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  // TODO: Add multi-touch support for playing multiple notes simultaneously on touch devices
   const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
@@ -92,13 +102,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP[key] !== undefined ? SIMPLE_KEYS_MAP[key] : -1;
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -113,13 +119,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS_MAP[key] !== undefined ? SIMPLE_KEYS_MAP[key] : -1;
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEYS_MAP[key] !== undefined ? FULL_KEYS_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
