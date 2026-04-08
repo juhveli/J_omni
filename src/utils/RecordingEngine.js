@@ -296,6 +296,7 @@ class RecordingEngine {
      * @param {string} layerId 
      * @param {number} volume - 0 to 1.5 (150%)
      */
+    // TODO: Add spatial audio panning per layer
     setLayerVolume(layerId, volume) {
         const layer = this.layers.find(l => l.id === layerId);
         if (layer) {
@@ -369,7 +370,7 @@ class RecordingEngine {
 
         // Find the longest layer duration
         const sampleRate = 44100;
-        const maxDuration = Math.max(...activeLayers.map(l => l.buffer.duration || 0));
+        const maxDuration = activeLayers.reduce((max, layer) => Math.max(max, layer.buffer.duration || 0), 0);
         if (maxDuration === 0) return null;
 
         const numSamples = Math.ceil(maxDuration * sampleRate);
