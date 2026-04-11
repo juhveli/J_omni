@@ -7,6 +7,7 @@ import ComfyUIPanel from './components/ComfyUIPanel'
 import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
+// TODO: Implement user authentication (e.g., Firebase Auth or NextAuth) to support cloud saving of user profiles and looper sessions.
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')

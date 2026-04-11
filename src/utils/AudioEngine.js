@@ -3,8 +3,13 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+
+        this.isMetronomePlaying = false;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
 
         this.instruments = {
             // Samplers
@@ -126,22 +131,72 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
+        }).connect(this.masterLimiter);
+
+        Tone.Transport.bpm.value = 120;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            const currentPosition = Tone.Transport.position.split(':');
+            const beat = Math.floor(currentPosition[1]) % 4;
+            const note = beat === 0 ? "C4" : "G3";
+            const velocity = beat === 0 ? 1 : 0.5;
+
+            this.metronomeSynth.triggerAttackRelease(note, "32n", time, velocity);
+
+            Tone.Draw.schedule(() => {
+                this.metronomeListeners.forEach(cb => cb(beat));
+            }, time);
+        }, "4n");
+
         this.initialized = true;
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBPM(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
     }
 
     _emitNoteEvent(note, time) {
@@ -195,6 +250,7 @@ class AudioEngine {
     }
 
     // --- Sampler Loaders ---
+    // TODO: Add support for custom SoundFonts (.sf2 or .sfz files) so users can import their own instrument sample libraries.
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
