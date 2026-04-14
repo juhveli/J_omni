@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RecordingEngine from '../utils/RecordingEngine';
 
+// TODO: Implement individual layer waveform visualizers
 const LayerManager = ({ isAudioStarted }) => {
     const [layers, setLayers] = useState([]);
     const [playingAll, setPlayingAll] = useState(false);
@@ -20,7 +21,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,

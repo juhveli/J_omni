@@ -1,8 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
+  const [metronomeBPM, setMetronomeBPM] = useState(120);
+  const [metronomeTickActive, setMetronomeTickActive] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToNotes((note) => {
+      if (note === 'metronomeTick') {
+        setMetronomeTickActive(true);
+        setTimeout(() => setMetronomeTickActive(false), 100);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleMetronomeToggle = () => {
+    const newEnabled = !metronomeEnabled;
+    setMetronomeEnabled(newEnabled);
+    AudioEngine.toggleMetronome(metronomeBPM);
+  };
+
+  const handleBPMChange = (e) => {
+    const bpm = parseInt(e.target.value, 10);
+    setMetronomeBPM(bpm);
+    AudioEngine.setMetronomeBPM(bpm);
+  };
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -78,6 +103,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+        <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                <button
+                    className={`control-btn ${metronomeEnabled ? 'active' : ''}`}
+                    onClick={handleMetronomeToggle}
+                    style={{ backgroundColor: metronomeTickActive ? '#ffeb3b' : undefined }}
+                >
+                    ⏱️ {metronomeEnabled ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                        type="range"
+                        min="60"
+                        max="200"
+                        value={metronomeBPM}
+                        onChange={handleBPMChange}
+                    />
+                    <span>{metronomeBPM} BPM</span>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   );

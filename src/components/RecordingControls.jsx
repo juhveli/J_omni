@@ -10,7 +10,7 @@ const RecordingControls = ({ isAudioStarted }) => {
     useEffect(() => {
         if (isAudioStarted) {
             RecordingEngine.initialize();
-            RecordingEngine.onRecordingStateChange = (recording, _source) => {
+        RecordingEngine.onRecordingStateChange = (recording) => {
                 setIsRecording(recording);
             };
         }
