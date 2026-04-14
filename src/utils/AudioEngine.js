@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: Allow custom user sample imports
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -126,21 +127,47 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this._emitNoteEvent('metronomeTick', Tone.now());
+            }, time);
+        }, "4n");
+
         this.initialized = true;
     }
 
+    toggleMetronome(bpm) {
+        if (!this.initialized) return;
+
+        if (this.metronomeLoop.state === "started") {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+        } else {
+            Tone.Transport.bpm.value = bpm || 120;
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        }
+    }
+
+    setMetronomeBPM(bpm) {
+        Tone.Transport.bpm.value = bpm;
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
