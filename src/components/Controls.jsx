@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeActive, setMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [metronomeBlink, setMetronomeBlink] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+        setMetronomeBlink(true);
+        setTimeout(() => setMetronomeBlink(false), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleToggleMetronome = () => {
+      const isActive = AudioEngine.toggleMetronome();
+      setMetronomeActive(isActive);
+  };
+
+  const handleBpmChange = (e) => {
+      const newBpm = parseInt(e.target.value, 10);
+      setBpm(newBpm);
+      AudioEngine.setMetronomeBPM(newBpm);
   };
 
   return (
@@ -78,6 +100,30 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+      </div>
+
+      <div className="settings-row">
+        <div className="control-group">
+            <h3>Metronome {metronomeBlink && "🔵"}</h3>
+            <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <button
+                    className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                    onClick={handleToggleMetronome}
+                    aria-pressed={metronomeActive}
+                >
+                    ⏱️ Metronome
+                </button>
+                <input
+                    type="range"
+                    min="60"
+                    max="200"
+                    value={bpm}
+                    onChange={handleBpmChange}
+                    style={{ marginTop: '10px' }}
+                />
+                <label>{bpm} BPM</label>
+            </div>
+        </div>
       </div>
     </div>
   );

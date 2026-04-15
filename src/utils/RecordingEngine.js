@@ -11,6 +11,7 @@ import LayerStorage from './LayerStorage';
  * - Managing multiple layers
  * - Mixing and exporting
  */
+// TODO: Implement spatial audio panning for individual recorded tracks to allow users to create stereo mixes.
 class RecordingEngine {
     constructor() {
         this.layers = [];
