@@ -18,25 +18,23 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
     }, 1000);
   };
 
-  const startPlaying = () => {
+  const startVisuals = () => {
     if (isActive) return;
     setIsActive(true);
     addSparkle();
-    onStart(note);
   };
 
-  const stopPlaying = () => {
+  const stopVisuals = () => {
     if (!isActive) return;
     setIsActive(false);
-    onStop(note);
   };
 
   // Handle external forceActive (keyboard or magic melody)
   useEffect(() => {
     if (forceActive) {
-      startPlaying();
+      startVisuals();
     } else {
-      stopPlaying();
+      stopVisuals();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
@@ -44,12 +42,14 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   const handlePointerDown = (e) => {
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    startPlaying();
+    startVisuals();
+    onStart(note);
   };
 
   const handlePointerUp = (e) => {
     e.preventDefault();
-    stopPlaying();
+    stopVisuals();
+    onStop(note);
   };
 
   return (

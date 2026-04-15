@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 
+// TODO: Support custom user sample imports to allow users to play with their own sounds.
 class AudioEngine {
     constructor() {
         this.isLoading = false;
@@ -35,6 +36,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeListeners = new Set();
     }
 
     async initialize() {
@@ -93,6 +100,15 @@ class AudioEngine {
         const dist = new Tone.Distortion(0.3).connect(this.masterLimiter);
         this.instruments.synthElectricGuitar.connect(dist);
         this.instruments.synthElectricGuitar.volume.value = -12;
+
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            Tone.Draw.schedule(() => {
+                this._emitMetronomeEvent();
+            }, time);
+        }, "4n");
         this.instruments.synthElectricGuitar.volume.value = -10;
 
         // Drum Synths
@@ -142,6 +158,33 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _emitMetronomeEvent() {
+        this.metronomeListeners.forEach(cb => cb());
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        Tone.Transport.bpm.value = bpm;
     }
 
     _emitNoteEvent(note, time) {
