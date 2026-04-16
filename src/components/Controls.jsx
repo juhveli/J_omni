@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  // TODO: Add custom theming support (e.g., color palettes) beyond the dark unicorn theme.
+  const [metronomeActive, setMetronomeActive] = useState(false);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -75,6 +77,15 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+                <button
+                  className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                  onClick={() => {
+                    const isPlaying = AudioEngine.toggleMetronome();
+                    setMetronomeActive(isPlaying);
+                  }}
+                >
+                    ⏱️ Metronome
                 </button>
             </div>
          </div>
