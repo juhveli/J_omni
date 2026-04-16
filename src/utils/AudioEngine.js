@@ -35,6 +35,13 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+        // TODO: Arpeggiator feature implementation - add logic to automatically arpeggiate held chords.
+
+        // Metronome State
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.metronomeBPM = 120;
+        this.isMetronomePlaying = false;
     }
 
     async initialize() {
@@ -122,11 +129,52 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+        }).connect(this.masterLimiter);
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C4", "32n", time);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.metronomeBPM;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            if (Tone.Transport.state !== "started") {
+                Tone.Transport.stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getIsMetronomePlaying() {
+        return this.isMetronomePlaying;
     }
 
     subscribe(callback) {
