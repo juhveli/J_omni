@@ -1,10 +1,12 @@
 import * as Tone from 'tone';
 
+// TODO: Implement an Arpeggiator feature for advanced rhythmic playback
+
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -122,6 +124,18 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+        this.isMetronomePlaying = false;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a slightly higher pitch on the first beat, standard pitch on others
+            const beat = Math.round(Tone.Transport.position.split(':')[1]);
+            const note = beat === 0 ? "C4" : "C3";
+            this.metronomeSynth.triggerAttackRelease(note, "32n", time);
+        }, "4n");
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +143,33 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
