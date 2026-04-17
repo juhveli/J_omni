@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
 
+// TODO: Add an interactive tutorial mode to guide new users
+
 // Rainbow/Unicorn Palette
 const COLORS = {
   C: '#FF6B97', // Pinkish Red
