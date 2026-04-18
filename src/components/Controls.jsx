@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: [Enhancement] Support Custom theming to let users personalize the app appearance.
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeActive, setMetronomeActive] = useState(false);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -75,6 +77,15 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
+                </button>
+                <button
+                    className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                    onClick={() => {
+                        const isActive = AudioEngine.toggleMetronome();
+                        setMetronomeActive(isActive);
+                    }}
+                >
+                    ⏱️ Metronome
                 </button>
             </div>
          </div>
