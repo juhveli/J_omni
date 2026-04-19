@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 
+// TODO: Implement an Arpeggiator feature for synthesized sounds
 class AudioEngine {
     constructor() {
         this.isLoading = false;
@@ -122,11 +123,39 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome setup
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        this.isMetronomeActive = false;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome(bpm = 120) {
+        if (!this.initialized) return;
+
+        if (this.isMetronomeActive) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomeActive = false;
+        } else {
+            Tone.Transport.bpm.value = bpm;
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomeActive = true;
+        }
+        return this.isMetronomeActive;
+    }
+
+    setBpm(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
     }
 
     subscribe(callback) {
