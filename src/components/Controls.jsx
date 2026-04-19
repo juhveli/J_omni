@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: Add custom theming allowing users to personalize the interface colors
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    const active = AudioEngine.toggleMetronome(bpm);
+    setIsMetronomePlaying(active);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setBpm(newBpm);
   };
 
   return (
@@ -76,7 +90,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <button
+                  className={`control-btn ${isMetronomePlaying ? 'active' : ''}`}
+                  onClick={handleMetronomeToggle}
+                  aria-pressed={isMetronomePlaying}
+                >
+                    ⏱️ Metronome
+                </button>
             </div>
+            {isMetronomePlaying && (
+              <div className="bpm-slider-container" style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="bpm-slider" style={{ fontSize: '0.9rem', color: '#fff' }}>BPM: {bpm}</label>
+                <input
+                  type="range"
+                  id="bpm-slider"
+                  min="60"
+                  max="240"
+                  value={bpm}
+                  onChange={handleBpmChange}
+                  style={{ flex: 1 }}
+                />
+              </div>
+            )}
          </div>
       </div>
     </div>
