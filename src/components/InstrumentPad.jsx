@@ -50,6 +50,18 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+const SIMPLE_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const FULL_KEY_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
+
+const midiToNote = (midiNumber) => {
+  const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const octave = Math.floor(midiNumber / 12) - 1;
+  const noteIndex = midiNumber % 12;
+  return `${notes[noteIndex]}${octave}`;
+};
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
@@ -85,6 +97,65 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   }, []);
 
   useEffect(() => {
+    // Web MIDI API integration
+    let midiAccess = null;
+
+    const onMIDISuccess = (access) => {
+      midiAccess = access;
+      const inputs = midiAccess.inputs.values();
+      for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+        input.value.onmidimessage = handleMIDIMessage;
+      }
+      midiAccess.onstatechange = (e) => {
+        if (e.port.type === 'input' && e.port.state === 'connected') {
+          e.port.onmidimessage = handleMIDIMessage;
+        }
+      };
+    };
+
+    const onMIDIFailure = () => {
+      console.warn("Could not access your MIDI devices.");
+    };
+
+    const handleMIDIMessage = (message) => {
+      // TODO: Implement velocity sensitivity for MIDI input
+      const [command, noteNum, velocity] = message.data;
+
+      // Note On
+      if (command === 144 && velocity > 0) {
+        const note = midiToNote(noteNum);
+        setActiveNotes(prev => new Set(prev).add(note));
+        handleStart(note);
+      }
+      // Note Off (or Note On with 0 velocity)
+      if (command === 128 || (command === 144 && velocity === 0)) {
+        const note = midiToNote(noteNum);
+        setActiveNotes(prev => {
+          const updated = new Set(prev);
+          updated.delete(note);
+          return updated;
+        });
+        handleStop(note);
+      }
+    };
+
+    if (navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+    }
+
+    return () => {
+      if (midiAccess) {
+        const inputs = midiAccess.inputs.values();
+        for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+          input.value.onmidimessage = null;
+        }
+      }
+    };
+  }, []);
+
+  // TODO: Allow custom key mappings for keyboard input via user settings
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.repeat) return;
 
@@ -92,13 +163,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -113,13 +180,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
