@@ -7,7 +7,7 @@ def run():
         page = browser.new_page()
 
         print("Navigating to app...")
-        page.goto("http://localhost:5173")
+        page.goto("http://localhost:5175")
 
         # Start the audio engine
         print("Clicking Start...")
