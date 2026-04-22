@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: Custom theming
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeActive, setMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    const isActive = AudioEngine.toggleMetronome();
+    setMetronomeActive(isActive);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setMetronomeBPM(newBpm);
   };
 
   return (
@@ -72,10 +86,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
 
         <div className="control-group">
             <h3>Fun</h3>
-            <div className="toggle-group">
-                <button className="control-btn" onClick={handleMagicClick}>
-                    🪄 Magic Melody
-                </button>
+            <div className="toggle-group" style={{ flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="control-btn" onClick={handleMagicClick}>
+                        🪄 Magic Melody
+                    </button>
+                    <button
+                        className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                        onClick={handleMetronomeToggle}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}>
+                    <span>BPM: {bpm}</span>
+                    <input
+                        type="range"
+                        min="60"
+                        max="200"
+                        value={bpm}
+                        onChange={handleBpmChange}
+                        style={{ width: '100px' }}
+                    />
+                </div>
             </div>
          </div>
       </div>

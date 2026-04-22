@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: individual instrument volume controls, Arpeggiator
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +36,11 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
     }
 
     async initialize() {
@@ -45,6 +51,9 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Metronome
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +139,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -191,6 +200,35 @@ class AudioEngine {
             case 'oboe': this._loadOboeSampler(); break;
             case 'electricGuitar': this._loadElectricGuitarSampler(); break;
             default: this._setLoading(false);
+        }
+    }
+
+    // --- Metronome ---
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            if (!this.metronomeLoop) {
+                this.metronomeLoop = new Tone.Loop((time) => {
+                    this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+                }, "4n");
+            }
+            Tone.Transport.bpm.value = this.metronomeBpm;
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
         }
     }
 
