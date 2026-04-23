@@ -1,8 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  // TODO: [Feature] Implement custom theming (e.g., Unicorn Dark Mode toggle).
+  const [isMetronomeActive, setIsMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
+
+  useEffect(() => {
+    AudioEngine.toggleMetronome(bpm, isMetronomeActive);
+  }, [bpm, isMetronomeActive]);
+
+  useEffect(() => {
+    if (isMetronomeActive) {
+      AudioEngine.setMetronomeBPM(bpm);
+    }
+  }, [bpm, isMetronomeActive]);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,7 +89,26 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <button
+                  className={`control-btn ${isMetronomeActive ? 'active' : ''}`}
+                  onClick={() => setIsMetronomeActive(!isMetronomeActive)}
+                >
+                  ⏱️ Metronome
+                </button>
             </div>
+            {isMetronomeActive && (
+              <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label style={{ color: 'white', fontSize: '0.8rem' }}>BPM: {bpm}</label>
+                <input
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={bpm}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            )}
          </div>
       </div>
     </div>

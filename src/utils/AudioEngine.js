@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -34,6 +34,7 @@ class AudioEngine {
         };
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
+        // TODO: [Enhancement] Add individual instrument volume controls.
         this.initialized = false;
     }
 
@@ -47,6 +48,13 @@ class AudioEngine {
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
 
         // --- SYNTHESIZERS ---
+
+        // Metronome
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a tick sound
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
 
         // Piano Synth (Triangle wave)
         this.instruments.synthPiano = new Tone.PolySynth(Tone.Synth, {
@@ -130,17 +138,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -292,6 +300,27 @@ class AudioEngine {
         }).connect(this.masterLimiter));
     }
 
+
+    toggleMetronome(bpm = 120, isActive) {
+        if (!this.initialized) return;
+
+        Tone.Transport.bpm.value = bpm;
+        if (isActive) {
+            this.metronomeLoop.start(0);
+            if (Tone.Transport.state !== "started") {
+                Tone.Transport.start();
+            }
+        } else {
+            this.metronomeLoop.stop();
+            // We might not want to stop Transport entirely if other things use it,
+            // but for now metronome is the main transport user.
+        }
+    }
+
+    setMetronomeBPM(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
+    }
 
     playMelody(melody) {
         if (!this.initialized) return;
