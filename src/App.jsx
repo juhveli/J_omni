@@ -8,6 +8,9 @@ import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
 function App() {
+  // TODO: Implement user authentication for cloud saves.
+  // TODO: Create an interactive tutorial mode to teach basic songs.
+  // TODO: Add spatial audio panning for instruments.
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')

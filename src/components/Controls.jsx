@@ -1,12 +1,26 @@
 import React from 'react';
 import AudioEngine from '../utils/AudioEngine';
+import { useState } from 'react';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomeActive, setIsMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
   };
+
+  const handleMetronomeToggle = () => {
+      const isActive = AudioEngine.toggleMetronome();
+      setIsMetronomeActive(isActive);
+  };
+
+  const handleBpmChange = (e) => {
+      const newBpm = parseInt(e.target.value);
+      setBpm(newBpm);
+      AudioEngine.setMetronomeBpm(newBpm);
+  }
 
   return (
     <div className="controls-container">
@@ -72,10 +86,31 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
 
         <div className="control-group">
             <h3>Fun</h3>
-            <div className="toggle-group">
-                <button className="control-btn" onClick={handleMagicClick}>
-                    🪄 Magic Melody
-                </button>
+            <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="control-btn" onClick={handleMagicClick}>
+                        🪄 Magic Melody
+                    </button>
+                    <button
+                        className={`control-btn ${isMetronomeActive ? 'active' : ''}`}
+                        onClick={handleMetronomeToggle}
+                        aria-pressed={isMetronomeActive}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                    <label htmlFor="bpm-slider" style={{ fontSize: '0.9rem', color: '#fff', whiteSpace: 'nowrap' }}>BPM: {bpm}</label>
+                    <input
+                        id="bpm-slider"
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={bpm}
+                        onChange={handleBpmChange}
+                        style={{ flexGrow: 1 }}
+                    />
+                </div>
             </div>
          </div>
       </div>
