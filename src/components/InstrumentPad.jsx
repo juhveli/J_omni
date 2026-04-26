@@ -50,7 +50,15 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+
+const SIMPLE_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const FULL_KEY_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
+
+// TODO: Add MIDI velocity sensitivity and custom key mappings
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+
   const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
@@ -87,18 +95,15 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.repeat) return;
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -109,17 +114,14 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     const handleKeyUp = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {

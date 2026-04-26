@@ -1,11 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: Support custom theming
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+
+  const [metronomeBpm, setMetronomeBpm] = useState(120);
+  const [isMetronomeActive, setIsMetronomeActive] = useState(false);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const toggleMetronome = () => {
+    const active = AudioEngine.toggleMetronome(metronomeBpm);
+    setIsMetronomeActive(active);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setMetronomeBpm(newBpm);
+    AudioEngine.setMetronomeBPM(newBpm);
   };
 
   return (
@@ -70,14 +85,35 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
           </div>
         )}
 
+
         <div className="control-group">
             <h3>Fun</h3>
             <div className="toggle-group">
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <button
+                        className={`control-btn ${isMetronomeActive ? 'active' : ''}`}
+                        onClick={toggleMetronome}
+                        style={{ minWidth: '140px' }}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                    <input
+                        type="range"
+                        min="60"
+                        max="200"
+                        value={metronomeBpm}
+                        onChange={handleBpmChange}
+                        title={`${metronomeBpm} BPM`}
+                        style={{ width: '100px' }}
+                    />
+                    <span style={{ fontSize: '0.8rem', color: 'var(--secondary-color)' }}>{metronomeBpm} BPM</span>
+                </div>
             </div>
          </div>
+
       </div>
     </div>
   );
