@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Piano Roll Mode**: Add a visual piano roll editor for sequence building.
+9.  **[Feature] Interactive Tutorial**: Create a lesson mode highlighting keys in sequence for simple songs.
+10. **[Feature] Mobile Multi-touch**: Improve mobile experience with full multi-touch support for polyphony.

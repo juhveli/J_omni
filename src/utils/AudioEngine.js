@@ -122,11 +122,45 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+        }).connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -6;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Determine if it's the first beat of a 4/4 measure
+            const isFirstBeat = Tone.Transport.position.split(':')[1] === '0' && Tone.Transport.position.split(':')[2].split('.')[0] === '0';
+            if (isFirstBeat) {
+                this.metronomeSynth.triggerAttackRelease("C4", "32n", time);
+            } else {
+                this.metronomeSynth.triggerAttackRelease("C3", "32n", time);
+            }
+        }, "4n");
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome(enabled) {
+        if (!this.initialized) return;
+        if (enabled) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+    }
+
+    setBPM(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
     }
 
     subscribe(callback) {
