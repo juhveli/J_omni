@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeActive, setMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -72,10 +74,35 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
 
         <div className="control-group">
             <h3>Fun</h3>
-            <div className="toggle-group">
+            <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <div className="metronome-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                        onClick={() => {
+                            const newState = !metronomeActive;
+                            setMetronomeActive(newState);
+                            AudioEngine.toggleMetronome(newState);
+                        }}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                    <input
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={bpm}
+                        onChange={(e) => {
+                            const newBpm = parseInt(e.target.value, 10);
+                            setBpm(newBpm);
+                            AudioEngine.setBpm(newBpm);
+                        }}
+                        style={{ width: '80px' }}
+                    />
+                    <span style={{ fontSize: '0.8rem' }}>{bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>

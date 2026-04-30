@@ -1,6 +1,9 @@
 import * as Tone from 'tone';
 
 class AudioEngine {
+    // TODO: [Feature] Individual instrument volume controls
+    // TODO: [Feature] Arpeggiator
+
     constructor() {
         this.isLoading = false;
         this.listeners = [];
@@ -35,6 +38,10 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome State
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -126,7 +133,32 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // Metronome Synth
+        this.instruments.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.instruments.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+
         this.initialized = true;
+    }
+
+    // --- Metronome Methods ---
+    toggleMetronome(playing) {
+        if (!this.initialized) return;
+        this.isMetronomePlaying = playing;
+        if (playing) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+    }
+
+    setBpm(newBpm) {
+        this.bpm = newBpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = this.bpm;
+        }
     }
 
     subscribe(callback) {

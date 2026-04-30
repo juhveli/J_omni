@@ -37,6 +37,9 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: [Feature] Spatial audio panning
+  // TODO: [Feature] Interactive tutorial mode
+
   return (
     <div className="app-container">
       {!isAudioStarted ? (
