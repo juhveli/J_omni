@@ -1,10 +1,13 @@
 import * as Tone from 'tone';
 
+// TODO: Add individual instrument volume controls
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -126,21 +129,29 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        Tone.Transport.start();
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+
         this.initialized = true;
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -156,6 +167,24 @@ class AudioEngine {
             setTimeout(() => {
                 this.noteListeners.forEach(cb => cb(note));
             }, delay);
+        }
+    }
+
+    toggleMetronome(enabled) {
+        this.isMetronomePlaying = enabled;
+        if (!this.initialized) return;
+
+        if (enabled) {
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+    }
+
+    setBpm(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
         }
     }
 
