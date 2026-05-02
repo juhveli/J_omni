@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeActive, setMetronomeActive] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,6 +78,33 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <button
+                        className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                        onClick={() => {
+                            const newState = !metronomeActive;
+                            setMetronomeActive(newState);
+                            AudioEngine.toggleMetronome(newState);
+                        }}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white', fontSize: '0.8rem' }}>
+                        <input
+                            type="range"
+                            min="60"
+                            max="200"
+                            value={bpm}
+                            onChange={(e) => {
+                                const newBpm = parseInt(e.target.value, 10);
+                                setBpm(newBpm);
+                                AudioEngine.setBpm(newBpm);
+                            }}
+                            style={{ width: '80px' }}
+                        />
+                        <span>{bpm} BPM</span>
+                    </div>
+                </div>
             </div>
          </div>
       </div>
