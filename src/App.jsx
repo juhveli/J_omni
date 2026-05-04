@@ -14,6 +14,7 @@ function App() {
   const [isAudioStarted, setIsAudioStarted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
+  const [isLessonMode, setIsLessonMode] = useState(false)
 
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
@@ -34,6 +35,8 @@ function App() {
     setSoundType(type)
     AudioEngine.setSoundType(type)
   }
+
+  // TODO: [Feature] Add user authentication and preference profiles for saving custom settings.
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
@@ -84,10 +87,13 @@ function App() {
                 setScale={setCurrentScale}
                 soundType={soundType}
                 setSoundType={handleSoundTypeChange}
+                isLessonMode={isLessonMode}
+                setIsLessonMode={setIsLessonMode}
               />
               <InstrumentPad
                 currentScale={currentScale}
                 currentInstrument={currentInstrument}
+                isLessonMode={isLessonMode}
               />
             </div>
           ) : (

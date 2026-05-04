@@ -18,3 +18,8 @@ export const MAGIC_MELODY = [
   { note: "D4", duration: "4n" }, { note: "D4", duration: "4n" },
   { note: "C4", duration: "2n" }
 ];
+
+export const LESSON_SONG = [
+  "C4", "C4", "G4", "G4", "A4", "A4", "G4",
+  "F4", "F4", "E4", "E4", "D4", "D4", "C4"
+];

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
+import { LESSON_SONG } from '../constants';
 
 // Rainbow/Unicorn Palette
 const COLORS = {
@@ -50,23 +51,47 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
-const InstrumentPad = ({ currentScale, currentInstrument }) => {
-  const [activeNotes, setActiveNotes] = useState(new Set());
+const SIMPLE_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const FULL_KEY_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
 
-  let notes;
-  if (currentInstrument === 'drums') {
-    notes = DRUMS;
-  } else {
-    notes = SCALES[currentScale] || SCALES.simple;
+// TODO: [Feature] Add Web MIDI API support allowing external hardware MIDI controllers to play notes.
+
+const InstrumentPad = ({ currentScale, currentInstrument, isLessonMode }) => {
+  const [activeNotes, setActiveNotes] = useState(new Set());
+  const [lessonIndex, setLessonIndex] = useState(0);
+
+  const notes = useMemo(() => {
+    if (currentInstrument === 'drums') {
+      return DRUMS;
+    }
+    return SCALES[currentScale] || SCALES.simple;
+  }, [currentInstrument, currentScale]);
+
+  // Reset lesson index when mode is toggled (using derived state pattern via previous state variable)
+  const [prevLessonMode, setPrevLessonMode] = useState(isLessonMode);
+  if (prevLessonMode !== isLessonMode) {
+    setPrevLessonMode(isLessonMode);
+    if (!isLessonMode) {
+      setLessonIndex(0);
+    }
   }
 
-  const handleStart = (note) => {
+  const handleStart = useCallback((note) => {
     AudioEngine.startNote(note);
-  };
 
-  const handleStop = (note) => {
+    // Check if lesson note was played correctly
+    if (isLessonMode && lessonIndex < LESSON_SONG.length) {
+      if (note === LESSON_SONG[lessonIndex]) {
+        setLessonIndex((prev) => prev + 1);
+      }
+    }
+  }, [isLessonMode, lessonIndex]);
+
+  const handleStop = useCallback((note) => {
     AudioEngine.stopNote(note);
-  };
+  }, []);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
@@ -92,13 +117,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -113,13 +134,9 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -140,21 +157,37 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [notes, currentInstrument, currentScale]);
+  }, [notes, currentInstrument, currentScale, handleStart, handleStop]);
+
+  // Determine current lesson target
+  const currentLessonNote = isLessonMode && lessonIndex < LESSON_SONG.length ? LESSON_SONG[lessonIndex] : null;
+
+  // Render completed state if lesson is finished
+  if (isLessonMode && lessonIndex >= LESSON_SONG.length) {
+    return (
+      <div className="lesson-complete">
+        <h2>🎉 Lesson Complete! 🎉</h2>
+        <button onClick={() => setLessonIndex(0)}>Play Again</button>
+      </div>
+    );
+  }
 
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
-      {notes.map((n) => (
-        <NoteButton
-          key={n.note}
-          note={n.note}
-          color={n.color}
-          label={n.label}
-          onStart={handleStart}
-          onStop={handleStop}
-          forceActive={activeNotes.has(n.note)}
-        />
-      ))}
+      {notes.map((n) => {
+        const isTarget = currentLessonNote === n.note;
+        return (
+          <NoteButton
+            key={n.note}
+            note={n.note}
+            color={n.color}
+            label={n.label}
+            onStart={handleStart}
+            onStop={handleStop}
+            forceActive={activeNotes.has(n.note) || isTarget}
+          />
+        );
+      })}
     </div>
   );
 };
