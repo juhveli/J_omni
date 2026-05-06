@@ -35,6 +35,7 @@ function App() {
     AudioEngine.setSoundType(type)
   }
 
+  // TODO: [Feature] Add spatial audio panning for a more immersive experience
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
   return (
