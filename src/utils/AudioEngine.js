@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -126,21 +132,75 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 10,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
+        }).connect(this.masterLimiter);
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a higher pitch on the first beat, lower on the others
+            // Assuming 4/4 time signature
+            const currentBeat = (Tone.Transport.position.split(':')[1]) % 4;
+            if (currentBeat == 0) {
+                this.metronomeSynth.triggerAttackRelease("C4", "8n", time);
+            } else {
+                this.metronomeSynth.triggerAttackRelease("C3", "8n", time);
+            }
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.bpm;
+
         this.initialized = true;
     }
 
+    // --- Metronome Controls ---
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        this.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getBpm() {
+        return this.bpm;
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomePlaying;
+    }
+
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -164,6 +224,8 @@ class AudioEngine {
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
     }
+
+    // TODO: Implement individual instrument volume controls
 
     setSoundType(type) {
         this.soundType = type;

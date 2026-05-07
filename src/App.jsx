@@ -37,6 +37,8 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: Add spatial audio panning (allow panning instruments left/right in studio)
+
   return (
     <div className="app-container">
       {!isAudioStarted ? (
