@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: [Feature] Custom theming
+
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    AudioEngine.toggleMetronome();
+    setMetronomeStatus(AudioEngine.getMetronomeStatus());
+  };
+
+  const handleBPMChange = (e) => {
+    const newBPM = parseInt(e.target.value, 10);
+    AudioEngine.setMetronomeBPM(newBPM);
+    setMetronomeStatus(AudioEngine.getMetronomeStatus());
   };
 
   return (
@@ -76,6 +90,22 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <button
+                  className={`control-btn ${metronomeStatus.active ? 'active' : ''}`}
+                  onClick={handleMetronomeToggle}
+                >
+                    ⏱️ Metronome
+                </button>
+            </div>
+            <div className="bpm-control" style={{ marginTop: '10px' }}>
+                <label style={{ marginRight: '10px' }}>BPM: {metronomeStatus.bpm}</label>
+                <input
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={metronomeStatus.bpm}
+                  onChange={handleBPMChange}
+                />
             </div>
          </div>
       </div>

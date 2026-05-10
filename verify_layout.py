@@ -4,7 +4,7 @@ def run():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto("http://localhost:5173")
+        page.goto("http://localhost:5175")
         page.click(".start-overlay")
         page.wait_for_selector(".controls-container")
 
