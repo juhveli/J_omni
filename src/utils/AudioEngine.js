@@ -1,10 +1,12 @@
 import * as Tone from 'tone';
 
+// TODO: [Feature] individual instrument volume controls
+
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +37,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.metronomeActive = false;
+        this.metronomeBPM = 120;
     }
 
     async initialize() {
@@ -45,6 +53,10 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // --- METRONOME SYNTH ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +142,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -292,6 +304,50 @@ class AudioEngine {
         }).connect(this.masterLimiter));
     }
 
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.metronomeActive) {
+            if (this.metronomeLoop) {
+                this.metronomeLoop.stop();
+                this.metronomeLoop.dispose();
+                this.metronomeLoop = null;
+            }
+            this.metronomeActive = false;
+        } else {
+            Tone.Transport.bpm.value = this.metronomeBPM;
+
+            // Create loop
+            this.metronomeLoop = new Tone.Loop((time) => {
+                this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            }, "4n");
+
+            // Start transport if it's not running
+            if (Tone.Transport.state !== "started") {
+                Tone.Transport.start();
+            }
+
+            this.metronomeLoop.start(0);
+            this.metronomeActive = true;
+        }
+
+        return this.metronomeActive;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return {
+            active: this.metronomeActive,
+            bpm: this.metronomeBPM
+        };
+    }
 
     playMelody(melody) {
         if (!this.initialized) return;
