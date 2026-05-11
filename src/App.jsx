@@ -8,6 +8,7 @@ import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
 function App() {
+  // TODO: Implement spatial audio panning for different instruments.
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')
