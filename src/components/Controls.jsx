@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    const isActive = AudioEngine.toggleMetronome();
+    setMetronomeStatus(prev => ({ ...prev, isActive }));
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    AudioEngine.setMetronomeBpm(newBpm);
+    setMetronomeStatus(prev => ({ ...prev, bpm: newBpm }));
   };
 
   return (
@@ -76,6 +88,24 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <div className="metronome-control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: '10px' }}>
+                    <button
+                        className={`control-btn ${metronomeStatus.isActive ? 'active' : ''}`}
+                        onClick={handleMetronomeToggle}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                    <input
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={metronomeStatus.bpm}
+                        onChange={handleBpmChange}
+                        title={`BPM: ${metronomeStatus.bpm}`}
+                        style={{ marginTop: '5px' }}
+                    />
+                    <span style={{ fontSize: '12px' }}>{metronomeStatus.bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>

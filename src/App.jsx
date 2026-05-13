@@ -7,6 +7,7 @@ import ComfyUIPanel from './components/ComfyUIPanel'
 import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
+// TODO: Implement interactive tutorial mode with highlighted keys
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
