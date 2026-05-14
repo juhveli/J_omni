@@ -7,6 +7,7 @@ import ComfyUIPanel from './components/ComfyUIPanel'
 import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
+// TODO: Create a Lesson Mode that highlights keys in sequence to teach popular songs.
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
