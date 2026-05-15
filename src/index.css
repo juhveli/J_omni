@@ -254,6 +254,20 @@ header h1 {
   justify-content: center;
 }
 
+.metronome-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  gap: 1rem;
+}
+
+.metronome-controls input[type="range"] {
+  flex-grow: 1;
+}
+
 .instrument-group {
   justify-content: center;
   gap: 1rem;
