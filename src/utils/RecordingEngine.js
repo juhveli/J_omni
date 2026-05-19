@@ -424,8 +424,15 @@ class RecordingEngine {
         const rightInt = new Int16Array(numSamples);
 
         for (let i = 0; i < numSamples; i++) {
-            leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
-            rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+            let leftSample = Math.floor(left[i] * 32767);
+            if (leftSample < -32768) leftSample = -32768;
+            else if (leftSample > 32767) leftSample = 32767;
+            leftInt[i] = leftSample;
+
+            let rightSample = Math.floor(right[i] * 32767);
+            if (rightSample < -32768) rightSample = -32768;
+            else if (rightSample > 32767) rightSample = 32767;
+            rightInt[i] = rightSample;
         }
 
         // Encode in blocks
