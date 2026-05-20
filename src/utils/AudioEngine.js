@@ -35,6 +35,13 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.metronomeActive = false;
+        this.metronomeBpm = 120;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        // TODO: [Enhancement] Add volume slider for the Metronome
     }
 
     async initialize() {
@@ -126,6 +133,25 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.1 }
+        }).connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            const beat = Math.floor(Tone.Transport.position.split(':')[1]);
+            if (beat === 0) {
+                this.metronomeSynth.triggerAttackRelease("C4", "32n", time, 1);
+            } else {
+                this.metronomeSynth.triggerAttackRelease("C3", "32n", time, 0.5);
+            }
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
         this.initialized = true;
     }
 
@@ -163,6 +189,34 @@ class AudioEngine {
         if (this.isLoading === loading) return;
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
+    }
+
+    // --- Metronome Controls ---
+    toggleMetronome(active) {
+        if (!this.initialized) return;
+        this.metronomeActive = active;
+        if (active) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport entirely if other things might use it later
+            // but for now, stopping metronome loop is enough.
+        }
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return {
+            active: this.metronomeActive,
+            bpm: this.metronomeBpm
+        };
     }
 
     setSoundType(type) {
