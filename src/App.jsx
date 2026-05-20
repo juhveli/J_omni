@@ -15,6 +15,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('play') // 'play' or 'studio'
 
+  // Initialize state directly to avoid sync state update during render
+  const initialMetronomeStatus = AudioEngine.getMetronomeStatus();
+  const [metronomeActive, setMetronomeActive] = useState(initialMetronomeStatus.active)
+  const [bpm, setBpm] = useState(initialMetronomeStatus.bpm)
+
   useEffect(() => {
     const unsubscribe = AudioEngine.subscribe(setIsLoading);
     return unsubscribe;
@@ -84,6 +89,10 @@ function App() {
                 setScale={setCurrentScale}
                 soundType={soundType}
                 setSoundType={handleSoundTypeChange}
+                metronomeActive={metronomeActive}
+                setMetronomeActive={setMetronomeActive}
+                bpm={bpm}
+                setBpm={setBpm}
               />
               <InstrumentPad
                 currentScale={currentScale}
