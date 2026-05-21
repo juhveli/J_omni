@@ -103,6 +103,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
       if (index >= 0 && index < notes.length) {
         const note = notes[index].note;
+        // TODO: Implement MIDI velocity sensitivity
         setActiveNotes(prev => new Set(prev).add(note));
         handleStart(note);
       }

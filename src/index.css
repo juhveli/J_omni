@@ -220,6 +220,18 @@ header h1 {
   max-width: 900px;
 }
 
+.metronome-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  color: white;
+}
+
+.metronome-slider-container input[type="range"] {
+  flex-grow: 1;
+}
+
 .control-group {
   display: flex;
   flex-direction: column;

@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,11 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronome = null;
+        this.metronomeLoop = null;
+        this.isMetronomeActive = false;
+        this.metronomeBPM = 120;
     }
 
     async initialize() {
@@ -121,6 +126,13 @@ class AudioEngine {
             oscillator: { type: "sine" }
         }).toDestination();
 
+        // Metronome
+        this.metronome = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronome.volume.value = -10;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronome.triggerAttackRelease("C4", "8n", time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.metronomeBPM;
 
         // --- SAMPLERS ---
         // Lazy load the default instrument
@@ -130,17 +142,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -192,6 +204,32 @@ class AudioEngine {
             case 'electricGuitar': this._loadElectricGuitarSampler(); break;
             default: this._setLoading(false);
         }
+    }
+
+    // --- Metronome ---
+
+    getMetronomeStatus() {
+        return {
+            isActive: this.isMetronomeActive,
+            bpm: this.metronomeBPM
+        };
+    }
+
+    toggleMetronome() {
+        this.isMetronomeActive = !this.isMetronomeActive;
+        if (this.isMetronomeActive) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        return this.isMetronomeActive;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = Math.max(40, Math.min(240, bpm));
+        Tone.Transport.bpm.rampTo(this.metronomeBPM, 0.1);
+        return this.metronomeBPM;
     }
 
     // --- Sampler Loaders ---
