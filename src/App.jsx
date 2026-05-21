@@ -21,6 +21,7 @@ function App() {
   }, []);
 
   const handleStart = async () => {
+    // TODO: Add spatial audio panning
     await AudioEngine.initialize()
     setIsAudioStarted(true)
   }
