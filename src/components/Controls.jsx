@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  // TODO: Add Custom theming options so users can change the colors of the interface
+  const [metronomeActive, setMetronomeActive] = useState(AudioEngine.getMetronomeStatus().isActive);
+  const [metronomeBpm, setMetronomeBpm] = useState(AudioEngine.getMetronomeStatus().bpm);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -72,10 +75,36 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
 
         <div className="control-group">
             <h3>Fun</h3>
-            <div className="toggle-group">
+            <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+                <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button
+                      className={`control-btn ${metronomeActive ? 'active' : ''}`}
+                      onClick={() => {
+                          const isActive = AudioEngine.toggleMetronome();
+                          setMetronomeActive(isActive);
+                      }}
+                  >
+                      ⏱️ Metronome
+                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <input
+                          type="range"
+                          min="60"
+                          max="200"
+                          value={metronomeBpm}
+                          onChange={(e) => {
+                              const bpm = parseInt(e.target.value, 10);
+                              setMetronomeBpm(bpm);
+                              AudioEngine.setMetronomeBpm(bpm);
+                          }}
+                          style={{ width: '100px' }}
+                      />
+                      <span style={{ fontSize: '0.8rem', color: 'white' }}>{metronomeBpm} BPM</span>
+                  </div>
+                </div>
             </div>
          </div>
       </div>

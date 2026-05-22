@@ -8,6 +8,7 @@ import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
 function App() {
+  // TODO: Add user authentication to allow saving presets and profiles
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')
