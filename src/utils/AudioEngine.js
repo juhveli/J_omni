@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomeActive = false;
+        this.metronomeBpm = 120;
     }
 
     async initialize() {
@@ -45,6 +51,15 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Metronome Setup
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C1", "8n", time);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.metronomeBpm;
 
         // --- SYNTHESIZERS ---
 
@@ -129,18 +144,53 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    // TODO: implement individual instrument volume controls to balance the mix
+    // --- METRONOME ---
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        this.isMetronomeActive = !this.isMetronomeActive;
+
+        if (this.isMetronomeActive) {
+            if (Tone.getTransport().state !== "started") {
+                Tone.getTransport().start();
+            }
+            this.metronomeLoop.start(0);
+            console.log("Metronome started");
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport if something else might be using it,
+            // but for simple case we could. Keeping transport running is generally safe.
+            console.log("Metronome stopped");
+        }
+
+        return this.isMetronomeActive;
+    }
+
+    setMetronomeBpm(bpm) {
+        this.metronomeBpm = bpm;
+        Tone.getTransport().bpm.value = bpm;
+    }
+
+    getMetronomeStatus() {
+        return {
+            isActive: this.isMetronomeActive,
+            bpm: this.metronomeBpm
+        };
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
