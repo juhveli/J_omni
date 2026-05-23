@@ -233,11 +233,21 @@ class ComfyUIClient {
     async downloadResult(filename) {
         console.log(`[ComfyUI Placeholder] Downloading result: ${filename}`);
 
-        // PLACEHOLDER: In production, this would GET /view?filename=...
-        await this._simulateDelay(500);
+        try {
+            const url = `${this.baseUrl}/view?filename=${encodeURIComponent(filename)}&type=output`;
+            const response = await fetch(url);
 
-        // Return placeholder audio
-        return new Blob([], { type: 'audio/wav' });
+            if (!response.ok) {
+                throw new Error(`Failed to download audio: ${response.statusText}`);
+            }
+
+            return await response.blob();
+        } catch (err) {
+            console.error(`[ComfyUI Client] Error downloading result:`, err);
+            this.onError?.(err);
+            // Fallback for placeholder
+            return new Blob([], { type: 'audio/wav' });
+        }
     }
 
     /**

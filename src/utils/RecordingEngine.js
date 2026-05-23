@@ -299,7 +299,10 @@ class RecordingEngine {
     setLayerVolume(layerId, volume) {
         const layer = this.layers.find(l => l.id === layerId);
         if (layer) {
-            layer.volume = Math.max(0, Math.min(1.5, volume));
+            let clampedVolume = volume;
+            if (clampedVolume < 0) clampedVolume = 0;
+            if (clampedVolume > 1.5) clampedVolume = 1.5;
+            layer.volume = clampedVolume;
             if (layer.player) {
                 layer.player.volume.value = Tone.gainToDb(layer.volume);
             }
@@ -424,8 +427,15 @@ class RecordingEngine {
         const rightInt = new Int16Array(numSamples);
 
         for (let i = 0; i < numSamples; i++) {
-            leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
-            rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+            let lSample = Math.floor(left[i] * 32767);
+            if (lSample < -32768) lSample = -32768;
+            if (lSample > 32767) lSample = 32767;
+            leftInt[i] = lSample;
+
+            let rSample = Math.floor(right[i] * 32767);
+            if (rSample < -32768) rSample = -32768;
+            if (rSample > 32767) rSample = 32767;
+            rightInt[i] = rSample;
         }
 
         // Encode in blocks
@@ -552,7 +562,9 @@ class RecordingEngine {
         let offset = 44;
         for (let i = 0; i < samples; i++) {
             for (let ch = 0; ch < numChannels; ch++) {
-                const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                let sample = channels[ch][i];
+                if (sample < -1) sample = -1;
+                if (sample > 1) sample = 1;
                 const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 view.setInt16(offset, int16, true);
                 offset += 2;
