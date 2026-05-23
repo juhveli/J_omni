@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -122,11 +128,60 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
+        }).connect(this.masterLimiter);
+
+        // Metronome Loop
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Stronger beat on the 1
+            const isDownbeat = (Tone.Transport.position.split(':')[1] === '0');
+            this.metronomeSynth.triggerAttackRelease(isDownbeat ? "C3" : "C2", "8n", time);
+        }, "4n");
+
+        // Set initial BPM
+        Tone.Transport.bpm.value = this.bpm;
+
         // --- SAMPLERS ---
+        // TODO: Add individual instrument volume controls to balance samplers
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    getMetronomeStatus() {
+        return { isPlaying: this.isMetronomePlaying, bpm: this.bpm };
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return { isPlaying: false, bpm: this.bpm };
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Optional: You might want to keep transport running if loops are going
+            // but for simple metronome, stopping loop is enough.
+            // Tone.Transport.stop();
+        }
+
+        return this.getMetronomeStatus();
+    }
+
+    setBpm(newBpm) {
+        this.bpm = Math.max(30, Math.min(300, newBpm));
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(this.bpm, 0.1);
+        }
+        return this.bpm;
     }
 
     subscribe(callback) {

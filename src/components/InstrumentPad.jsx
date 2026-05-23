@@ -134,6 +134,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     window.addEventListener('keydown', handleKeyDown);
+    // TODO: Implement multi-touch support for touch devices
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
