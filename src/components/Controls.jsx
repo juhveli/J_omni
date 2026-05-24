@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomeActive, setIsMetronomeActive] = useState(AudioEngine.getMetronomeStatus());
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -72,10 +74,38 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
 
         <div className="control-group">
             <h3>Fun</h3>
-            <div className="toggle-group">
-                <button className="control-btn" onClick={handleMagicClick}>
-                    🪄 Magic Melody
-                </button>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <button className="control-btn" onClick={handleMagicClick}>
+                        🪄 Magic Melody
+                    </button>
+                    <button
+                        className={`control-btn ${isMetronomeActive ? 'active' : ''}`}
+                        onClick={() => {
+                            const newState = AudioEngine.toggleMetronome();
+                            setIsMetronomeActive(newState);
+                        }}
+                    >
+                        ⏱️ Metronome
+                    </button>
+                </div>
+                {isMetronomeActive && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'white' }}>BPM: {bpm}</span>
+                        <input
+                            type="range"
+                            min="60"
+                            max="200"
+                            value={bpm}
+                            onChange={(e) => {
+                                const newBpm = parseInt(e.target.value);
+                                setBpm(newBpm);
+                                AudioEngine.setMetronomeBPM(newBpm);
+                            }}
+                            style={{ flex: 1 }}
+                        />
+                    </div>
+                )}
             </div>
          </div>
       </div>

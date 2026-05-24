@@ -1,0 +1,83 @@
+<<<<<<< SEARCH
+        this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
+        this.soundType = 'sampled'; // 'sampled' | 'synthesized'
+        this.initialized = false;
+    }
+
+    async initialize() {
+=======
+        this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
+        this.soundType = 'sampled'; // 'sampled' | 'synthesized'
+        this.initialized = false;
+
+        // Metronome State
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBPM = 120;
+    }
+
+    async initialize() {
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        // Lazy load the default instrument
+        this._loadPianoSampler();
+
+        this.initialized = true;
+    }
+
+    subscribe(callback) {
+=======
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
+        }).connect(this.masterLimiter);
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Accent on the first beat of 4/4
+            const isFirstBeat = (this.metronomeLoop.progress === 0);
+            const pitch = isFirstBeat ? "C4" : "C3";
+            const velocity = isFirstBeat ? 1 : 0.5;
+            this.metronomeSynth.triggerAttackRelease(pitch, "16n", time, velocity);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.metronomeBPM;
+
+        // Lazy load the default instrument
+        this._loadPianoSampler();
+
+        this.initialized = true;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            if (Tone.getTransport().state !== "started") {
+                 // only stop transport if other things aren't using it.
+                 Tone.getTransport().stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = bpm;
+        if (this.initialized) {
+            Tone.getTransport().bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomePlaying;
+    }
+
+    subscribe(callback) {
+>>>>>>> REPLACE

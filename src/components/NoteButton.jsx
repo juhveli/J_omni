@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sparkle from './Sparkle';
 
 const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   const [isActive, setIsActive] = useState(false);
   const [sparkles, setSparkles] = useState([]);
+  const timeoutRef = useRef(null);
 
   const addSparkle = () => {
     const id = Date.now();
@@ -34,9 +35,23 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   // Handle external forceActive (keyboard or magic melody)
   useEffect(() => {
     if (forceActive) {
-      startPlaying();
+      if (!isActive) {
+        setIsActive(true);
+        addSparkle();
+      }
+      if (timeoutRef.current) {
+         clearTimeout(timeoutRef.current);
+         timeoutRef.current = null;
+      }
     } else {
-      stopPlaying();
+      timeoutRef.current = setTimeout(() => {
+         setIsActive(false);
+      }, 50); // Small debounce to prevent stuttering
+    }
+    return () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceActive]);
@@ -67,4 +82,4 @@ const NoteButton = ({ note, label, color, onStart, onStop, forceActive }) => {
   );
 };
 
-export default NoteButton;
+export default React.memo(NoteButton);
