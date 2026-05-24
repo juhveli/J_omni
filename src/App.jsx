@@ -35,6 +35,8 @@ function App() {
     AudioEngine.setSoundType(type)
   }
 
+  // TODO: Implement spatial audio panning for instruments to create a wider stereo image, especially in studio mode.
+
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
   return (
