@@ -8,6 +8,9 @@ import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
 function App() {
+  // TODO: Implement user authentication and cloud saving for profiles and recordings.
+  // TODO: Add spatial audio panning options to enhance stereo immersion.
+
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
   const [soundType, setSoundType] = useState('sampled')

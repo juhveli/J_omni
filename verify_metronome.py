@@ -5,17 +5,17 @@ def run():
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         page.goto("http://localhost:5175")
-        page.click(".start-overlay")
+        page.click(".start-overlay", force=True)
         page.wait_for_selector(".controls-container")
 
         # Check text
         content = page.content()
-        if "🌈 Simple" in content and "🎹 Full" in content:
-            print("New labels present.")
+        if "⏱️ Metronome" in content and "BPM:" in content:
+            print("Metronome UI present.")
         else:
-            print("New labels NOT found.")
+            print("Metronome UI NOT found.")
 
-        page.screenshot(path="/home/jules/verification/layout_polish.png")
+        page.screenshot(path="verification_metronome.png")
         browser.close()
 
 if __name__ == "__main__":

@@ -2,9 +2,12 @@ import * as Tone from 'tone';
 
 class AudioEngine {
     constructor() {
+        // TODO: Implement individual instrument volume controls for more granular mixing.
+        // TODO: Add an Arpeggiator feature for dynamic pattern generation.
+
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +38,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -122,6 +131,13 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -130,17 +146,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -445,6 +461,36 @@ class AudioEngine {
             case 'electricGuitar': return inst.synthElectricGuitar;
             default: return inst.synthPiano;
         }
+    }
+
+    // --- Metronome Controls ---
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+    }
+
+    setBpm(newBpm) {
+        if (!this.initialized) return;
+        this.bpm = newBpm;
+        Tone.Transport.bpm.value = this.bpm;
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomePlaying;
+    }
+
+    getBpm() {
+        return this.bpm;
     }
 }
 
