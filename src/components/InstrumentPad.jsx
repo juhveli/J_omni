@@ -142,6 +142,7 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
   }, [notes, currentInstrument, currentScale]);
 
+  // TODO: Implement MIDI velocity sensitivity
   return (
     <div className={`instrument-pad ${currentInstrument === 'drums' ? 'simple' : currentScale}`}>
       {notes.map((n) => (

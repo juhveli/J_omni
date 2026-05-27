@@ -1,10 +1,13 @@
 import * as Tone from 'tone';
 
 class AudioEngine {
+    // TODO: Add individual instrument volume controls
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeActive = false;
+        this.metronomeBPM = 120;
 
         this.instruments = {
             // Samplers
@@ -122,6 +125,18 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome Synth
+        this.instruments.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.001,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+        }).toDestination();
+        this.instruments.metronomeSynth.volume.value = -6;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+             this.instruments.metronomeSynth.triggerAttackRelease("C4", "32n", time);
+        }, "4n");
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +144,44 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    toggleMetronome(active) {
+        if (!this.initialized) return;
+        this.metronomeActive = active !== undefined ? active : !this.metronomeActive;
+
+        if (this.metronomeActive) {
+            Tone.Transport.bpm.value = this.metronomeBPM;
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+        }
+        return this.metronomeActive;
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return { active: this.metronomeActive, bpm: this.metronomeBPM };
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
