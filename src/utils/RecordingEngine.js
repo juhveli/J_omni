@@ -424,8 +424,15 @@ class RecordingEngine {
         const rightInt = new Int16Array(numSamples);
 
         for (let i = 0; i < numSamples; i++) {
-            leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
-            rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+            let lSample = Math.floor(left[i] * 32767);
+            if (lSample < -32768) lSample = -32768;
+            else if (lSample > 32767) lSample = 32767;
+            leftInt[i] = lSample;
+
+            let rSample = Math.floor(right[i] * 32767);
+            if (rSample < -32768) rSample = -32768;
+            else if (rSample > 32767) rSample = 32767;
+            rightInt[i] = rSample;
         }
 
         // Encode in blocks
@@ -552,7 +559,10 @@ class RecordingEngine {
         let offset = 44;
         for (let i = 0; i < samples; i++) {
             for (let ch = 0; ch < numChannels; ch++) {
-                const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                let sample = channels[ch][i];
+                if (sample < -1) sample = -1;
+                else if (sample > 1) sample = 1;
+
                 const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 view.setInt16(offset, int16, true);
                 offset += 2;
