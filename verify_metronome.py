@@ -10,12 +10,19 @@ def run():
 
         # Check text
         content = page.content()
-        if "🌈 Simple" in content and "🎹 Full" in content:
-            print("New labels present.")
+        if "⏱️ Metronome" in content:
+            print("Metronome button found.")
         else:
-            print("New labels NOT found.")
+            print("Metronome button NOT found.")
 
-        page.screenshot(path="/home/jules/verification/layout_polish.png")
+        # Click metronome button
+        page.click(".metronome-btn")
+
+        # Check if metronome button is active
+        page.wait_for_selector(".metronome-btn.active")
+        print("Metronome button active.")
+
+        page.screenshot(path="/home/jules/verification/metronome.png")
         browser.close()
 
 if __name__ == "__main__":
