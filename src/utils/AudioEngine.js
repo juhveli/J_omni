@@ -6,6 +6,8 @@ class AudioEngine {
         this.listeners = [];
         this.noteListeners = [];
 
+        // TODO: Add support for custom user sample imports.
+
         this.instruments = {
             // Samplers
             pianoSampler: null,
@@ -122,11 +124,47 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        this.isMetronomeActive = false;
+        this.bpm = 120;
+        Tone.Transport.bpm.value = this.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome() {
+        this.isMetronomeActive = !this.isMetronomeActive;
+        if (this.isMetronomeActive) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            if (Tone.Transport.state !== 'started') { // check if transport is used by something else, otherwise leave it running if needed. But to be safe, stopping it if metronome is off and nothing else plays might be good, though for simple metronome just stopping the loop is fine.
+                // We'll leave transport running for now or just stop the loop.
+            }
+        }
+        return this.isMetronomeActive;
+    }
+
+    setBpm(newBpm) {
+        this.bpm = newBpm;
+        Tone.Transport.bpm.value = this.bpm;
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomeActive;
+    }
+
+    getBpm() {
+        return this.bpm;
     }
 
     subscribe(callback) {

@@ -9,7 +9,7 @@ def verify_app():
         page = context.new_page()
 
         print("Navigating to app...")
-        page.goto("http://localhost:5173")
+        page.goto("http://localhost:5175")
 
         # Wait for start overlay
         print("Waiting for start overlay...")
