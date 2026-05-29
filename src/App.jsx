@@ -35,6 +35,8 @@ function App() {
     AudioEngine.setSoundType(type)
   }
 
+  // TODO: [Feature] Add user authentication to allow cloud saves of user preferences and custom creations.
+
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
   return (

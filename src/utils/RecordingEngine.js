@@ -203,6 +203,8 @@ class RecordingEngine {
         return null;
     }
 
+    // TODO: [Feature] Add audio trimming and editing capabilities for recorded layers.
+
     /**
      * Add a layer from audio blob
      * @param {Blob} audioBlob 
@@ -424,8 +426,15 @@ class RecordingEngine {
         const rightInt = new Int16Array(numSamples);
 
         for (let i = 0; i < numSamples; i++) {
-            leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
-            rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+            let lVal = Math.floor(left[i] * 32767);
+            if (lVal < -32768) lVal = -32768;
+            else if (lVal > 32767) lVal = 32767;
+            leftInt[i] = lVal;
+
+            let rVal = Math.floor(right[i] * 32767);
+            if (rVal < -32768) rVal = -32768;
+            else if (rVal > 32767) rVal = 32767;
+            rightInt[i] = rVal;
         }
 
         // Encode in blocks
@@ -552,7 +561,10 @@ class RecordingEngine {
         let offset = 44;
         for (let i = 0; i < samples; i++) {
             for (let ch = 0; ch < numChannels; ch++) {
-                const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                let sample = channels[ch][i];
+                if (sample < -1) sample = -1;
+                else if (sample > 1) sample = 1;
+
                 const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 view.setInt16(offset, int16, true);
                 offset += 2;
