@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -42,6 +42,8 @@ class AudioEngine {
 
         await Tone.start();
         console.log("Audio Engine Started");
+
+        this._initMidi();
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
@@ -130,17 +132,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -193,6 +195,46 @@ class AudioEngine {
             default: this._setLoading(false);
         }
     }
+
+    // --- MIDI ---
+    async _initMidi() {
+        if (navigator.requestMIDIAccess) {
+            try {
+                const midiAccess = await navigator.requestMIDIAccess();
+                for (const input of midiAccess.inputs.values()) {
+                    input.onmidimessage = this._handleMidiMessage.bind(this);
+                }
+                midiAccess.onstatechange = (e) => {
+                    if (e.port.state === 'connected' && e.port.type === 'input') {
+                        e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                };
+                console.log("Web MIDI initialized");
+            } catch (err) {
+                console.warn("Web MIDI API could not be initialized:", err);
+            }
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMidiMessage(message) {
+        const [status, noteNumber, velocity] = message.data;
+        const command = status >> 4;
+
+        // Note On
+        if (command === 9 && velocity > 0) {
+            const noteName = Tone.Frequency(noteNumber, "midi").toNote();
+            this.startNote(noteName);
+        }
+        // Note Off or Note On with 0 velocity
+        else if (command === 8 || (command === 9 && velocity === 0)) {
+            const noteName = Tone.Frequency(noteNumber, "midi").toNote();
+            this.stopNote(noteName);
+        }
+    }
+
+    // TODO: [Feature] Implement individual instrument volume and pan controls.
 
     // --- Sampler Loaders ---
 
