@@ -1,6 +1,7 @@
 import * as Tone from 'tone';
 
 class AudioEngine {
+    // TODO: Add individual instrument volume and pan controls.
     constructor() {
         this.isLoading = false;
         this.listeners = [];

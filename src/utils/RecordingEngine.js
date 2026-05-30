@@ -12,6 +12,7 @@ import LayerStorage from './LayerStorage';
  * - Mixing and exporting
  */
 class RecordingEngine {
+    // TODO: Add audio trimming and editing capabilities for recorded layers.
     constructor() {
         this.layers = [];
         this.isRecording = false;
@@ -424,8 +425,15 @@ class RecordingEngine {
         const rightInt = new Int16Array(numSamples);
 
         for (let i = 0; i < numSamples; i++) {
-            leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
-            rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+            let lSamp = Math.floor(left[i] * 32767);
+            if (lSamp < -32768) lSamp = -32768;
+            else if (lSamp > 32767) lSamp = 32767;
+            leftInt[i] = lSamp;
+
+            let rSamp = Math.floor(right[i] * 32767);
+            if (rSamp < -32768) rSamp = -32768;
+            else if (rSamp > 32767) rSamp = 32767;
+            rightInt[i] = rSamp;
         }
 
         // Encode in blocks
@@ -552,7 +560,9 @@ class RecordingEngine {
         let offset = 44;
         for (let i = 0; i < samples; i++) {
             for (let ch = 0; ch < numChannels; ch++) {
-                const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                let sample = channels[ch][i];
+                if (sample < -1) sample = -1;
+                else if (sample > 1) sample = 1;
                 const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 view.setInt16(offset, int16, true);
                 offset += 2;
