@@ -1,10 +1,12 @@
 import * as Tone from 'tone';
 
+// TODO: Add individual instrument volume/pan controls.
+
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -45,6 +47,9 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Initialize MIDI support
+        this._initMidi();
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +135,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -444,6 +449,42 @@ class AudioEngine {
             case 'oboe': return inst.synthOboe;
             case 'electricGuitar': return inst.synthElectricGuitar;
             default: return inst.synthPiano;
+        }
+    }
+
+    _initMidi() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI access granted");
+                    for (const input of midiAccess.inputs.values()) {
+                        input.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.state === 'connected' && e.port.type === 'input') {
+                            e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                        }
+                    };
+                },
+                () => {
+                    console.log("MIDI access denied or not supported");
+                }
+            );
+        } else {
+            console.log("Web MIDI API not supported in this browser");
+        }
+    }
+
+    _handleMidiMessage(event) {
+        if (!this.initialized) return;
+
+        const [command, noteNum, velocity] = event.data;
+        const noteName = Tone.Frequency(noteNum, "midi").toNote();
+
+        if (command === 144 && velocity > 0) { // Note on
+            this.startNote(noteName);
+        } else if (command === 128 || (command === 144 && velocity === 0)) { // Note off
+            this.stopNote(noteName);
         }
     }
 }
