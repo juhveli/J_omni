@@ -3,8 +3,14 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+
+        this.metronomeActive = false;
+        this.bpm = 120;
+        this.metronomeSynth = null;
+        this.metronomeEventId = null;
 
         this.instruments = {
             // Samplers
@@ -126,21 +132,82 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this._initMetronome();
+
+        // Start Tone.js transport for timeline features
+        Tone.Transport.start();
+
         this.initialized = true;
     }
 
+    // --- Metronome ---
+
+    _initMetronome() {
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        Tone.Transport.bpm.value = this.bpm;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        this.metronomeActive = !this.metronomeActive;
+
+        if (this.metronomeActive) {
+            Tone.Transport.bpm.value = this.bpm;
+            this.metronomeEventId = Tone.Transport.scheduleRepeat((time) => {
+                this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+            }, "4n");
+        } else {
+            if (this.metronomeEventId !== null) {
+                Tone.Transport.clear(this.metronomeEventId);
+                this.metronomeEventId = null;
+            }
+        }
+
+        this._emitMetronomeChange();
+    }
+
+    setBPM(newBPM) {
+        this.bpm = newBPM;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = this.bpm;
+        }
+        this._emitMetronomeChange();
+    }
+
+    getMetronomeStatus() {
+        return { active: this.metronomeActive, bpm: this.bpm };
+    }
+
+    _emitMetronomeChange() {
+        const status = this.getMetronomeStatus();
+        this.metronomeListeners.forEach(cb => cb(status));
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        // Initial state
+        callback(this.getMetronomeStatus());
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    // TODO: Implement MIDI Velocity Sensitivity
+    // --- Subscription ---
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -196,6 +263,7 @@ class AudioEngine {
 
     // --- Sampler Loaders ---
 
+    // TODO: Add support for Custom Instrument Imports
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
         if (sampler) {
