@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -45,6 +45,8 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        this._initMidi();
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +132,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -193,6 +195,46 @@ class AudioEngine {
             default: this._setLoading(false);
         }
     }
+
+    // --- MIDI ---
+
+    async _initMidi() {
+        if (!navigator.requestMIDIAccess) {
+            console.log("Web MIDI API not supported in this browser.");
+            return;
+        }
+
+        try {
+            const midiAccess = await navigator.requestMIDIAccess();
+            const inputs = midiAccess.inputs.values();
+            for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+                input.value.onmidimessage = this._handleMidiMessage.bind(this);
+            }
+            console.log("MIDI Support Enabled");
+        } catch (err) {
+            console.warn("Failed to get MIDI access", err);
+        }
+    }
+
+    _handleMidiMessage(message) {
+        const command = message.data[0] >> 4;
+        const noteNumber = message.data[1];
+        const velocity = message.data.length > 2 ? message.data[2] : 0;
+
+        // Note Off (8) or Note On (9) with 0 velocity
+        if (command === 8 || (command === 9 && velocity === 0)) {
+            const noteName = Tone.Frequency(noteNumber, "midi").toNote();
+            this.stopNote(noteName);
+        }
+        // Note On (9)
+        else if (command === 9) {
+            const noteName = Tone.Frequency(noteNumber, "midi").toNote();
+            // TODO: [Feature] Add MIDI velocity sensitivity
+            this.startNote(noteName);
+        }
+    }
+
+    // TODO: [Feature] Implement individual instrument volume/pan controls.
 
     // --- Sampler Loaders ---
 
