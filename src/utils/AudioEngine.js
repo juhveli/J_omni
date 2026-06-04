@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: Add individual instrument volume/pan controls
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -126,21 +127,68 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this._initMidi();
+
         this.initialized = true;
     }
 
+    _initMidi() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI Access Success");
+                    for (let input of midiAccess.inputs.values()) {
+                        input.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.type === "input" && e.port.state === "connected") {
+                            e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                        }
+                    };
+                },
+                () => {
+                    console.warn("MIDI Access Failed");
+                }
+            );
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMidiMessage(event) {
+        const [command, note, velocity] = event.data;
+        // Command 144 (0x90) is Note On, 128 (0x80) is Note Off
+        // Some devices send Note On with 0 velocity for Note Off
+        const isNoteOn = command === 144 && velocity > 0;
+        const isNoteOff = command === 128 || (command === 144 && velocity === 0);
+
+        if (isNoteOn || isNoteOff) {
+            // Very simple note conversion mapping middle C (MIDI 60) to C4
+            const octave = Math.floor(note / 12) - 1;
+            const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const noteName = noteNames[note % 12];
+            const toneNote = `${noteName}${octave}`;
+
+            if (isNoteOn) {
+                this.startNote(toneNote);
+            } else if (isNoteOff) {
+                this.stopNote(toneNote);
+            }
+        }
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
