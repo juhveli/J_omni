@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
+        this.metronomeLoop = null;
+        this.metronomeSynth = null;
     }
 
     async initialize() {
@@ -126,21 +132,25 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
         this.initialized = true;
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -194,7 +204,52 @@ class AudioEngine {
         }
     }
 
+    // --- Metronome ---
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: this.metronomeBpm
+        };
+    }
+
+    setBpm(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(bpm, 0.1);
+        }
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            if (this.metronomeLoop) {
+                this.metronomeLoop.stop();
+                this.metronomeLoop.dispose();
+                this.metronomeLoop = null;
+            }
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.bpm.value = this.metronomeBpm;
+            let tickCount = 0;
+            this.metronomeLoop = new Tone.Loop((time) => {
+                const note = (tickCount % 4 === 0) ? "C2" : "G1";
+                const velocity = (tickCount % 4 === 0) ? 1 : 0.5;
+                this.metronomeSynth.triggerAttackRelease(note, "8n", time, velocity);
+                tickCount++;
+            }, "4n").start(0);
+
+            Tone.Transport.start();
+            this.isMetronomePlaying = true;
+        }
+
+        return this.isMetronomePlaying;
+    }
+
     // --- Sampler Loaders ---
+    // TODO: [Feature] Add custom soundfonts support for sampling
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
