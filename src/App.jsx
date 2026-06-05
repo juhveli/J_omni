@@ -39,6 +39,7 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* TODO: [Feature] Implement interactive tutorial mode for beginners */}
       {!isAudioStarted ? (
         <div className="start-overlay" onClick={handleStart}>
           <div className="start-content">
