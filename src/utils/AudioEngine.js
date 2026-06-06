@@ -1,10 +1,16 @@
+// TODO: Implement an Arpeggiator feature for synthesized instruments
 import * as Tone from 'tone';
 
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomeEnabled = false;
+        this.bpm = 120;
 
         this.instruments = {
             // Samplers
@@ -126,21 +132,37 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        Tone.Transport.bpm.value = this.bpm;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Accentuate the first beat
+            const beatPosition = Tone.Transport.position.split(':')[1];
+            if (beatPosition === '0') {
+                this.metronomeSynth.triggerAttackRelease("C2", "8n", time, 1); // Accent
+            } else {
+                this.metronomeSynth.triggerAttackRelease("G1", "8n", time, 0.5); // Normal
+            }
+        }, "4n");
+
         this.initialized = true;
+
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -194,7 +216,32 @@ class AudioEngine {
         }
     }
 
+
+    // --- METRONOME ---
+    getMetronomeStatus() {
+        return { enabled: this.isMetronomeEnabled, bpm: this.bpm };
+    }
+
+    toggleMetronome(enabled) {
+        if (!this.initialized) return;
+        this.isMetronomeEnabled = enabled;
+        if (enabled) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Optional: Tone.Transport.stop() if nothing else uses it
+            // Tone.Transport.stop();
+        }
+    }
+
+    setBPM(bpm) {
+        this.bpm = bpm;
+        Tone.Transport.bpm.rampTo(bpm, 0.1);
+    }
+
     // --- Sampler Loaders ---
+
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
