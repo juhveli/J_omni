@@ -1,8 +1,24 @@
+// TODO: Add Custom theming options for the UI
 import React from 'react';
+import { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeEnabled, setMetronomeEnabled] = useState(AudioEngine.getMetronomeStatus().enabled);
+  const [bpm, setBpm] = useState(AudioEngine.getMetronomeStatus().bpm);
+
+  const handleMetronomeToggle = () => {
+    const newState = !metronomeEnabled;
+    setMetronomeEnabled(newState);
+    AudioEngine.toggleMetronome(newState);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value);
+    setBpm(newBpm);
+    AudioEngine.setBPM(newBpm);
+  };
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -78,8 +94,32 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+        <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                <button
+                    className={`control-btn ${metronomeEnabled ? 'active' : ''}`}
+                    onClick={handleMetronomeToggle}
+                    aria-pressed={metronomeEnabled}
+                >
+                    {metronomeEnabled ? '⏱️ Metronome On' : '⏱️ Metronome Off'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={bpm}
+                        onChange={handleBpmChange}
+                    />
+                    <span>{bpm} BPM</span>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
+
   );
 };
 
