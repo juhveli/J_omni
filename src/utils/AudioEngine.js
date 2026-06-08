@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -95,6 +101,28 @@ class AudioEngine {
         this.instruments.synthElectricGuitar.volume.value = -12;
         this.instruments.synthElectricGuitar.volume.value = -10;
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.01 }
+        }).connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a higher pitch on the first beat
+            const beat = Math.round(Tone.Transport.position.split(':')[1]);
+            if (beat === 0) {
+                 this.metronomeSynth.triggerAttackRelease("C5", "32n", time, 1);
+            } else {
+                 this.metronomeSynth.triggerAttackRelease("C4", "32n", time, 0.5);
+            }
+        }, "4n");
+        Tone.Transport.bpm.value = this.bpm;
+
+        // TODO: individual instrument volume/pan controls
+
         // Drum Synths
         this.instruments.drumSynths.kick = new Tone.MembraneSynth().toDestination();
         this.instruments.drumSynths.snare = new Tone.NoiseSynth({
@@ -130,17 +158,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -290,6 +318,38 @@ class AudioEngine {
             onload: onload,
             onerror: onerror
         }).connect(this.masterLimiter));
+    }
+
+
+    // --- Metronome Control ---
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(newBpm) {
+        this.bpm = newBpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(newBpm, 0.1);
+        }
+    }
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: this.bpm
+        };
     }
 
 
