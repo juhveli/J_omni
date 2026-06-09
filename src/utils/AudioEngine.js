@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: Arpeggiator
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -45,6 +46,14 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        this.isMetronomeActive = false;
+        this.metronomeBpm = 120;
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +139,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -445,6 +454,34 @@ class AudioEngine {
             case 'electricGuitar': return inst.synthElectricGuitar;
             default: return inst.synthPiano;
         }
+    }
+
+    // --- Metronome Methods ---
+
+    toggleMetronome() {
+        this.isMetronomeActive = !this.isMetronomeActive;
+        if (this.isMetronomeActive) {
+            Tone.Transport.bpm.value = this.metronomeBpm;
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        return this.isMetronomeActive;
+    }
+
+    setMetronomeBpm(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.isMetronomeActive) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return {
+            isActive: this.isMetronomeActive,
+            bpm: this.metronomeBpm
+        };
     }
 }
 
