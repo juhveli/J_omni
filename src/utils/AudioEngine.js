@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: Add MIDI velocity sensitivity support
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +36,11 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        this.metronomeStatus = {
+            enabled: false,
+            bpm: 120
+        };
     }
 
     async initialize() {
@@ -122,6 +128,17 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a tick
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.metronomeStatus.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +146,40 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    toggleMetronome(enabled) {
+        this.metronomeStatus.enabled = enabled;
+        if (enabled) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport entirely if other features rely on it later,
+            // but for now metronome is the main transport user
+            Tone.Transport.stop();
+        }
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeStatus.bpm = bpm;
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    getMetronomeStatus() {
+        return { ...this.metronomeStatus };
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
