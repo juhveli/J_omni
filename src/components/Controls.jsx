@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: Add individual instrument volume/pan controls
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeOn, setMetronomeOn] = useState(false);
+  const [bpm, setBpm] = useState(120);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const handleMetronomeToggle = () => {
+    const isOn = AudioEngine.toggleMetronome();
+    setMetronomeOn(isOn);
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    setBpm(newBpm);
+    AudioEngine.setMetronomeBpm(newBpm);
   };
 
   return (
@@ -78,6 +92,31 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+        <div className="control-group">
+          <h3>Metronome</h3>
+          <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'center' }}>
+            <button
+              className={`control-btn ${metronomeOn ? 'active' : ''}`}
+              onClick={handleMetronomeToggle}
+              aria-pressed={metronomeOn}
+            >
+              ⏱️ {metronomeOn ? 'Stop' : 'Start'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <input
+                type="range"
+                min="60"
+                max="240"
+                value={bpm}
+                onChange={handleBpmChange}
+                style={{ width: '100px' }}
+              />
+              <span style={{ color: 'white', fontWeight: 'bold' }}>{bpm} BPM</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
