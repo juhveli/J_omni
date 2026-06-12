@@ -122,11 +122,58 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a click on every quarter note
+            // Highlight the downbeat (first beat)
+            const position = Tone.Transport.position.split(':');
+            const beat = parseInt(position[1], 10);
+
+            if (beat === 0) {
+                this.metronomeSynth.triggerAttackRelease("C3", "32n", time, 1);
+            } else {
+                this.metronomeSynth.triggerAttackRelease("C2", "32n", time, 0.5);
+            }
+        }, "4n");
+
+        this.metronomeOn = false;
+        Tone.Transport.bpm.value = 120; // Default BPM
+
         // --- SAMPLERS ---
+        // TODO: Implement custom user sample imports for instruments
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        this.metronomeOn = !this.metronomeOn;
+        if (this.metronomeOn) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport entirely as it might be used by playMelody or others,
+            // but for a simple app we might just stop the loop.
+        }
+        return this.metronomeOn;
+    }
+
+    setMetronomeBpm(bpm) {
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    getMetronomeStatus() {
+        return {
+            isOn: this.metronomeOn,
+            bpm: Tone.Transport.bpm.value
+        };
     }
 
     subscribe(callback) {
