@@ -20,7 +20,7 @@ const LayerManager = ({ isAudioStarted }) => {
                 volume: l.volume
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
@@ -178,6 +178,7 @@ const LayerManager = ({ isAudioStarted }) => {
                                     <span className="layer-name">{layer.name}</span>
                                     <span className="layer-duration">{formatDuration(layer.duration)}</span>
                                 </div>
+                                {/* TODO: [Feature] Add individual layer waveform visualizers */}
 
                                 <div className="layer-volume-section">
                                     <div className="volume-bar-container">
