@@ -3,8 +3,13 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
 
         this.instruments = {
             // Samplers
@@ -41,10 +46,14 @@ class AudioEngine {
         if (this.initialized) return;
 
         await Tone.start();
+        Tone.Transport.start();
         console.log("Audio Engine Started");
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Initialize metronome synth
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +139,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -157,6 +166,40 @@ class AudioEngine {
                 this.noteListeners.forEach(cb => cb(note));
             }, delay);
         }
+    }
+
+    // --- Metronome ---
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            if (this.metronomeLoop) {
+                this.metronomeLoop.stop();
+            }
+            this.isMetronomePlaying = false;
+        } else {
+            if (!this.metronomeLoop) {
+                this.metronomeLoop = new Tone.Loop((time) => {
+                    this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+                }, "4n");
+            }
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        if (!this.initialized) return;
+        Tone.Transport.bpm.value = bpm;
+    }
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: Math.round(Tone.Transport.bpm.value)
+        };
     }
 
     _setLoading(loading) {
@@ -195,6 +238,7 @@ class AudioEngine {
     }
 
     // --- Sampler Loaders ---
+    // TODO: [Feature] Add custom user sample imports
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
