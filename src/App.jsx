@@ -35,6 +35,10 @@ function App() {
     AudioEngine.setSoundType(type)
   }
 
+  // TODO: Add user authentication for cloud saves
+  // TODO: Add interactive tutorial mode
+  // TODO: Add support for Custom SoundFonts
+
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
   return (
