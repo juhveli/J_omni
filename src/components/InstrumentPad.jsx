@@ -50,6 +50,8 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+// TODO: MIDI velocity sensitivity, custom key mappings
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
