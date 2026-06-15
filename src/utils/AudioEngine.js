@@ -1,5 +1,7 @@
 import * as Tone from 'tone';
 
+// TODO: individual instrument volume/pan controls
+
 class AudioEngine {
     constructor() {
         this.isLoading = false;
@@ -35,6 +37,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.metronomeBPM = 120;
+        this.isMetronomePlaying = false;
     }
 
     async initialize() {
@@ -122,11 +130,66 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome setup
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: {
+                attack: 0.001,
+                decay: 0.2,
+                sustain: 0,
+                release: 0.2
+            }
+        }).toDestination();
+        this.metronomeSynth.volume.value = -10;
+
+        Tone.Transport.bpm.value = this.metronomeBPM;
+
+        let beatCount = 0;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            if (beatCount % 4 === 0) {
+                // Accent on the first beat
+                this.metronomeSynth.triggerAttackRelease("C3", "8n", time, 1);
+            } else {
+                this.metronomeSynth.triggerAttackRelease("G2", "8n", time, 0.5);
+            }
+            beatCount++;
+        }, "4n");
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+            this.isMetronomePlaying = false;
+        } else {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+            this.isMetronomePlaying = true;
+        }
+
+        return this.isMetronomePlaying;
+    }
+
+    setMetronomeBPM(bpm) {
+        if (!this.initialized) return;
+        this.metronomeBPM = Math.max(40, Math.min(240, bpm));
+        Tone.Transport.bpm.value = this.metronomeBPM;
+    }
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: this.metronomeBPM
+        };
     }
 
     subscribe(callback) {
