@@ -35,6 +35,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.isMetronomeOn = false;
+        this.bpm = 120;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
     }
 
     async initialize() {
@@ -45,6 +51,13 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Metronome setup
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        Tone.Transport.bpm.value = this.bpm;
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
 
         // --- SYNTHESIZERS ---
 
@@ -144,6 +157,36 @@ class AudioEngine {
         };
     }
 
+    // --- Metronome ---
+    toggleMetronome() {
+        if (!this.initialized) return false;
+
+        this.isMetronomeOn = !this.isMetronomeOn;
+        if (this.isMetronomeOn) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+        }
+        return this.isMetronomeOn;
+    }
+
+    setBpm(bpm) {
+        this.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(bpm, 0.1);
+        }
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomeOn;
+    }
+
+    getBpm() {
+        return this.bpm;
+    }
+
     _emitNoteEvent(note, time) {
         // Calculate delay in milliseconds
         // If time is undefined, delay is 0
@@ -195,6 +238,7 @@ class AudioEngine {
     }
 
     // --- Sampler Loaders ---
+    // TODO: [Feature] Custom user sample imports
 
     _handleSamplerLoad(instrumentKey, samplerFactory) {
         const sampler = this.instruments[instrumentKey];
