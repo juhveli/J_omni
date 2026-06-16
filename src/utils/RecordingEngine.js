@@ -2,6 +2,8 @@ import * as Tone from 'tone';
 import lamejs from 'lamejs';
 import LayerStorage from './LayerStorage';
 
+// TODO: [Feature] Audio trimming and editing capabilities for recorded layers
+
 /**
  * RecordingEngine - Multi-layer recording system
  * 
@@ -552,7 +554,9 @@ class RecordingEngine {
         let offset = 44;
         for (let i = 0; i < samples; i++) {
             for (let ch = 0; ch < numChannels; ch++) {
-                const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                let sample = channels[ch][i];
+                if (sample > 1) sample = 1;
+                else if (sample < -1) sample = -1;
                 const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 view.setInt16(offset, int16, true);
                 offset += 2;
