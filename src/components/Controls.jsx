@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: [Feature] Implement Arpeggiator.
+
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeMetronome(setMetronomeStatus);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,6 +84,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group metronome-controls" style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+              <button
+                className={`control-btn ${metronomeStatus.isPlaying ? 'active' : ''}`}
+                onClick={() => AudioEngine.toggleMetronome()}
+              >
+                ⏱️ {metronomeStatus.isPlaying ? 'Stop' : 'Start'}
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="range"
+                  min="60"
+                  max="240"
+                  value={metronomeStatus.bpm}
+                  onChange={(e) => AudioEngine.setMetronomeBpm(parseInt(e.target.value))}
+                />
+                <span>{metronomeStatus.bpm} BPM</span>
+              </div>
             </div>
          </div>
       </div>
