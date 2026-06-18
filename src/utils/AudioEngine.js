@@ -126,7 +126,45 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this._initMidi();
+
         this.initialized = true;
+    }
+
+    _initMidi() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(
+                (midiAccess) => {
+                    console.log("MIDI access granted.");
+                    for (let input of midiAccess.inputs.values()) {
+                        input.onmidimessage = this._handleMidiMessage.bind(this);
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.state === 'connected' && e.port.type === 'input') {
+                            e.port.onmidimessage = this._handleMidiMessage.bind(this);
+                        }
+                    };
+                },
+                () => console.error("MIDI access failed.")
+            );
+        } else {
+            console.warn("Web MIDI API not supported in this browser.");
+        }
+    }
+
+    _handleMidiMessage(message) {
+        const [command, noteNum, velocity] = message.data;
+        const commandType = command & 0xF0; // Mask out the channel bits
+        // Map MIDI note number to Tone.js string (e.g., 60 -> C4)
+        const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const octave = Math.floor(noteNum / 12) - 1;
+        const noteName = noteNames[noteNum % 12] + octave;
+
+        if (commandType === 144 && velocity > 0) { // Note on
+            this.startNote(noteName);
+        } else if (commandType === 128 || (commandType === 144 && velocity === 0)) { // Note off
+            this.stopNote(noteName);
+        }
     }
 
     subscribe(callback) {

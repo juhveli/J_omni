@@ -8,6 +8,7 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
     AudioEngine.playMelody(MAGIC_MELODY);
   };
 
+  // TODO: Implement custom theming for controls
   return (
     <div className="controls-container">
       <div className="control-group full-width">
