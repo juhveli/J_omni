@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 
+// TODO: Implement individual layer waveform visualizers
 class AudioEngine {
     constructor() {
         this.isLoading = false;

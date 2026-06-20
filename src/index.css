@@ -395,10 +395,24 @@ header h1 {
 }
 
 /* Full scale adjustment */
+.instrument-pad.full {
+  align-items: flex-start;
+}
+
 .instrument-pad.full .note-btn {
   font-size: 1rem;
   max-width: 60px;
   border-width: 2px;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.instrument-pad.full .note-btn.sharp {
+  height: 55%;
+  margin: 0 -20px;
+  max-width: 40px;
+  z-index: 2;
 }
 
 /* Visual rhythm */
@@ -408,6 +422,16 @@ header h1 {
 
 .instrument-pad .note-btn:nth-child(even) {
   height: 65%;
+}
+
+.keyboard-hint {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
 }
 
 /* Studio View */
