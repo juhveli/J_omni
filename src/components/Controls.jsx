@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+  const [tick, setTick] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+      setTick(true);
+      setTimeout(() => setTick(false), 100);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,6 +86,35 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="metronome-controls toggle-group">
+                <button
+                  className={`control-btn ${metronomeStatus.active ? 'active' : ''} ${tick ? 'tick' : ''}`}
+                  onClick={() => {
+                      const isActive = AudioEngine.toggleMetronome();
+                      setMetronomeStatus(prev => ({ ...prev, active: isActive }));
+                  }}
+                >
+                    ⏱️ {metronomeStatus.active ? 'On' : 'Off'}
+                </button>
+                <div className="bpm-slider-container">
+                    <input
+                        type="range"
+                        min="60"
+                        max="240"
+                        value={metronomeStatus.bpm}
+                        onChange={(e) => {
+                            const newBpm = parseInt(e.target.value, 10);
+                            AudioEngine.setMetronomeBpm(newBpm);
+                            setMetronomeStatus(prev => ({ ...prev, bpm: newBpm }));
+                        }}
+                    />
+                    <span>{metronomeStatus.bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
