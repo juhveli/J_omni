@@ -1,12 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(setMetronomeStatus);
+    return unsubscribe;
+  }, []);
+
+  const handleMetronomeToggle = () => {
+    AudioEngine.toggleMetronome();
+  };
+
+  const handleBpmChange = (e) => {
+    AudioEngine.setBPM(parseInt(e.target.value, 10));
+  };
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
   };
+
+  // TODO: Add support for custom theming (e.g. changing note colors)
+  // TODO: Add user preference profiles for saving instrument and metronome settings
 
   return (
     <div className="controls-container">
@@ -77,7 +94,33 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                     🪄 Magic Melody
                 </button>
             </div>
-         </div>
+        </div>
+
+        <div className="control-group metronome-group">
+          <h3>Metronome</h3>
+          <div className="toggle-group">
+            <button
+              className={`control-btn ${metronomeStatus.isPlaying ? 'active' : ''}`}
+              onClick={handleMetronomeToggle}
+              aria-pressed={metronomeStatus.isPlaying}
+            >
+              ⏱️ {metronomeStatus.isPlaying ? 'Stop' : 'Start'}
+            </button>
+            <div className="bpm-slider-container">
+              <input
+                type="range"
+                min="40"
+                max="240"
+                value={metronomeStatus.bpm}
+                onChange={handleBpmChange}
+                className="bpm-slider"
+                title={`BPM: ${metronomeStatus.bpm}`}
+              />
+              <span className="bpm-label">{metronomeStatus.bpm} BPM</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
