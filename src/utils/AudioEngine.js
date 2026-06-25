@@ -3,8 +3,8 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +35,13 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome state
+        this.metronomeBPM = 120;
+        this.isMetronomePlaying = false;
+        this.metronomeListeners = new Set();
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
     }
 
     async initialize() {
@@ -121,6 +128,32 @@ class AudioEngine {
             oscillator: { type: "sine" }
         }).toDestination();
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 4,
+            oscillator: { type: 'sine' },
+            envelope: {
+                attack: 0.001,
+                decay: 0.1,
+                sustain: 0,
+                release: 0.01
+            }
+        }).connect(this.masterLimiter);
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Accent the first beat of a 4/4 measure
+            const beat = Math.floor(Tone.Transport.position.split(':')[1]);
+            const isDownbeat = beat === 0;
+            const velocity = isDownbeat ? 1 : 0.5;
+            const pitch = isDownbeat ? 'C3' : 'C2';
+
+            this.metronomeSynth.triggerAttackRelease(pitch, '32n', time, velocity);
+        }, '4n');
+
+        Tone.Transport.bpm.value = this.metronomeBPM;
+
 
         // --- SAMPLERS ---
         // Lazy load the default instrument
@@ -130,17 +163,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -313,6 +346,55 @@ class AudioEngine {
     /**
      * Start playing a note (sustained)
      */
+    // ==========================================
+    // Metronome
+    // ==========================================
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            // Start on the next downbeat
+            this.metronomeLoop.start(Tone.Transport.nextSubdivision('1m'));
+            if (Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+            }
+        } else {
+            this.metronomeLoop.stop();
+        }
+
+        this._notifyMetronomeListeners();
+    }
+
+    setBPM(bpm) {
+        this.metronomeBPM = Math.max(40, Math.min(240, bpm));
+        if (this.initialized) {
+            Tone.Transport.bpm.rampTo(this.metronomeBPM, 0.1);
+        }
+        this._notifyMetronomeListeners();
+    }
+
+    getBPM() {
+        return this.metronomeBPM;
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomePlaying;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback({ bpm: this.metronomeBPM, isPlaying: this.isMetronomePlaying });
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        this.metronomeListeners.forEach(cb => cb({ bpm: this.metronomeBPM, isPlaying: this.isMetronomePlaying }));
+    }
+
     startNote(note) {
         if (!this.initialized) return;
 
