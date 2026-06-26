@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(setMetronomeStatus);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,6 +82,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <button
+                  className={`control-btn ${metronomeStatus.isPlaying ? 'active' : ''}`}
+                  onClick={() => AudioEngine.toggleMetronome()}
+                >
+                    ⏱️ {metronomeStatus.isPlaying ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <input
+                        type="range"
+                        min="40"
+                        max="240"
+                        value={metronomeStatus.bpm}
+                        onChange={(e) => AudioEngine.setMetronomeBPM(parseInt(e.target.value, 10))}
+                        style={{ width: '100px' }}
+                    />
+                    <span style={{ color: 'white' }}>{metronomeStatus.bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
