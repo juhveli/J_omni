@@ -50,6 +50,7 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+// TODO: [Feature] Add custom user-definable key mappings for instruments.
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
