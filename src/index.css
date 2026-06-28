@@ -747,3 +747,29 @@ header h1 {
     grid-template-columns: 1fr;
   }
 }
+/* Metronome UI */
+.metronome-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.bpm-slider-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.bpm-slider-container label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.2rem;
+}
+
+.bpm-slider {
+  width: 100%;
+}
