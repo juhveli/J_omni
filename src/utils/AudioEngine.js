@@ -1,10 +1,11 @@
 import * as Tone from 'tone';
 
+// TODO: [Feature] Add individual instrument volume/pan controls
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +36,13 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
+        this.metronomeListeners = new Set();
     }
 
     async initialize() {
@@ -45,6 +53,13 @@ class AudioEngine {
 
         // Create Master Limiter to prevent crackling/clipping
         this.masterLimiter = new Tone.Limiter(-1).toDestination();
+
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth().connect(this.masterLimiter);
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.metronomeBpm;
 
         // --- SYNTHESIZERS ---
 
@@ -130,17 +145,17 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
@@ -292,6 +307,50 @@ class AudioEngine {
         }).connect(this.masterLimiter));
     }
 
+
+    // --- Metronome ---
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport completely as it might be used by recording/playback
+        }
+
+        this._notifyMetronomeListeners();
+        return this.isMetronomePlaying;
+    }
+
+    setBpm(bpm) {
+        this.metronomeBpm = bpm;
+        Tone.Transport.bpm.value = bpm;
+        this._notifyMetronomeListeners();
+    }
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: this.metronomeBpm
+        };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback(this.getMetronomeStatus());
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        const status = this.getMetronomeStatus();
+        this.metronomeListeners.forEach(cb => cb(status));
+    }
 
     playMelody(melody) {
         if (!this.initialized) return;
