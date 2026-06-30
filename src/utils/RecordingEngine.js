@@ -128,6 +128,7 @@ class RecordingEngine {
         }
     }
 
+    // TODO: Add audio trimming and editing capabilities for recorded layers
     /**
      * Start recording from specified source
      * @param {'instruments' | 'microphone'} source

@@ -84,8 +84,15 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     return unsubscribe;
   }, []);
 
+  // TODO: Support custom key mappings
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
       if (e.repeat) return;
 
       const key = e.key.toLowerCase();
@@ -109,6 +116,12 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     const handleKeyUp = (e) => {
+      if (
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
       const key = e.key.toLowerCase();
       let index = -1;
 

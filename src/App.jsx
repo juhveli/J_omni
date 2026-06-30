@@ -20,6 +20,7 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // TODO: Implement user authentication for cloud saves
   const handleStart = async () => {
     await AudioEngine.initialize()
     setIsAudioStarted(true)

@@ -3,8 +3,13 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomeOn = false;
+        this.bpm = 120;
 
         this.instruments = {
             // Samplers
@@ -122,6 +127,13 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C1", "8n", time);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -130,17 +142,25 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
+        };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback({ isOn: this.isMetronomeOn, bpm: this.bpm });
+        return () => {
+            this.metronomeListeners.delete(callback);
         };
     }
 
@@ -163,6 +183,32 @@ class AudioEngine {
         if (this.isLoading === loading) return;
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
+    }
+
+    getMetronomeStatus() {
+        return { isOn: this.isMetronomeOn, bpm: this.bpm };
+    }
+
+    toggleMetronome() {
+        this.isMetronomeOn = !this.isMetronomeOn;
+        if (this.isMetronomeOn) {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        this._emitMetronomeStatus();
+    }
+
+    setBpm(newBpm) {
+        this.bpm = newBpm;
+        Tone.getTransport().bpm.value = this.bpm;
+        this._emitMetronomeStatus();
+    }
+
+    _emitMetronomeStatus() {
+        const status = { isOn: this.isMetronomeOn, bpm: this.bpm };
+        this.metronomeListeners.forEach(cb => cb(status));
     }
 
     setSoundType(type) {
