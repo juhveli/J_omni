@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeState, setMetronomeState] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(setMetronomeState);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
+  };
+
+  const toggleMetronome = () => {
+    AudioEngine.toggleMetronome();
+  };
+
+  const handleBpmChange = (e) => {
+    AudioEngine.setBpm(parseInt(e.target.value, 10));
   };
 
   return (
@@ -76,6 +90,29 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', gap: '5px' }}>
+                <button
+                    className={`control-btn ${metronomeState.isPlaying ? 'active' : ''}`}
+                    onClick={toggleMetronome}
+                    aria-pressed={metronomeState.isPlaying}
+                >
+                    {metronomeState.isPlaying ? '⏱️ Stop' : '⏱️ Start'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                        type="range"
+                        min="40"
+                        max="240"
+                        value={metronomeState.bpm}
+                        onChange={handleBpmChange}
+                    />
+                    <span>{metronomeState.bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
