@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+// TODO: [Feature] Add user authentication for cloud saves and preference profiles.
 import Controls from './components/Controls'
 import InstrumentPad from './components/InstrumentPad'
 import RecordingControls from './components/RecordingControls'
