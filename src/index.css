@@ -747,3 +747,11 @@ header h1 {
     grid-template-columns: 1fr;
   }
 }
+/* Keyboard Hints */
+.keyboard-hint {
+  position: absolute;
+  bottom: 5px;
+  font-size: 0.8em;
+  opacity: 0.5;
+  font-family: monospace;
+}

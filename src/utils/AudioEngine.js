@@ -3,8 +3,12 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+
+        this.isMetronomeOn = false;
+        this.metronomeBPM = 120;
+        this.metronomeListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +39,7 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+        this.metronomeLoop = null;
     }
 
     async initialize() {
@@ -126,22 +131,69 @@ class AudioEngine {
         // Lazy load the default instrument
         this._loadPianoSampler();
 
+        this._setupMetronome();
+
         this.initialized = true;
     }
 
+    _setupMetronome() {
+        this.instruments.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: {
+                attack: 0.001,
+                decay: 0.1,
+                sustain: 0,
+                release: 0.01
+            }
+        }).toDestination();
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.instruments.metronomeSynth.triggerAttackRelease("C5", "32n", time, 0.5);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.metronomeBPM;
+    }
+
+    setMetronomeStatus(isOn) {
+        this.isMetronomeOn = isOn;
+        if (isOn) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+        }
+        this.metronomeListeners.forEach(cb => cb(this.isMetronomeOn));
+    }
+
+    setMetronomeBPM(bpm) {
+        this.metronomeBPM = Math.max(30, Math.min(300, bpm));
+        Tone.Transport.bpm.rampTo(this.metronomeBPM, 0.1);
+    }
+
+    getMetronomeStatus() {
+        return this.isMetronomeOn;
+    }
+
+    getMetronomeBPM() {
+        return this.metronomeBPM;
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => this.metronomeListeners.delete(callback);
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
-        return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
-        };
+        return () => this.listeners.delete(callback);
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
-        return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
-        };
+        this.noteListeners.add(callback);
+        return () => this.noteListeners.delete(callback);
     }
 
     _emitNoteEvent(note, time) {
@@ -448,4 +500,5 @@ class AudioEngine {
     }
 }
 
+// TODO: Implement individual layer waveform visualizers for the Recording Studio.
 export default new AudioEngine();

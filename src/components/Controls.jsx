@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [isMetronomeOn, setIsMetronomeOn] = useState(AudioEngine.getMetronomeStatus());
+  const [bpm, setBpm] = useState(AudioEngine.getMetronomeBPM());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(setIsMetronomeOn);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -76,6 +83,33 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  className={`control-btn ${isMetronomeOn ? 'active' : ''}`}
+                  onClick={() => AudioEngine.setMetronomeStatus(!isMetronomeOn)}
+                >
+                    ⏱️ {isMetronomeOn ? 'Stop' : 'Start'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--secondary-color)' }}>
+                    <span>{bpm} BPM</span>
+                    <input
+                      type="range"
+                      min="60"
+                      max="200"
+                      value={bpm}
+                      onChange={(e) => {
+                        const newBpm = parseInt(e.target.value, 10);
+                        setBpm(newBpm);
+                        AudioEngine.setMetronomeBPM(newBpm);
+                      }}
+                      style={{ accentColor: 'var(--primary-color)' }}
+                    />
+                </div>
             </div>
          </div>
       </div>
