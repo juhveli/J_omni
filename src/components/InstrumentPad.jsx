@@ -85,6 +85,8 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   }, []);
 
   useEffect(() => {
+    // TODO: Custom key mappings
+
     const handleKeyDown = (e) => {
       if (e.repeat) return;
 
