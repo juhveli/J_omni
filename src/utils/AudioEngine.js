@@ -3,8 +3,9 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
 
         this.instruments = {
             // Samplers
@@ -35,6 +36,12 @@ class AudioEngine {
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
         this.initialized = false;
+
+        // Metronome properties
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
     }
 
     async initialize() {
@@ -122,6 +129,18 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome setup
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.bpm;
+
+        // TODO: Individual instrument volume/pan controls
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -130,32 +149,39 @@ class AudioEngine {
     }
 
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
+        };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
         };
     }
 
     _emitNoteEvent(note, time) {
-        // Calculate delay in milliseconds
-        // If time is undefined, delay is 0
-        const now = Tone.now();
-        const delay = time ? Math.max(0, (time - now) * 1000) : 0;
-
-        if (delay === 0) {
+        if (!time) {
             this.noteListeners.forEach(cb => cb(note));
         } else {
-            setTimeout(() => {
+            Tone.Transport.schedule(() => {
                 this.noteListeners.forEach(cb => cb(note));
-            }, delay);
+            }, time);
+
+            // Start transport if it's not already running
+            if (Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+            }
         }
     }
 
@@ -163,6 +189,40 @@ class AudioEngine {
         if (this.isLoading === loading) return;
         this.isLoading = loading;
         this.listeners.forEach(cb => cb(this.isLoading));
+    }
+
+    // --- Metronome ---
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Optional: stop transport if nothing else is using it
+            // Tone.Transport.stop();
+        }
+
+        this.metronomeListeners.forEach(cb => cb(this.isMetronomePlaying));
+        return this.isMetronomePlaying;
+    }
+
+    setBPM(bpm) {
+        this.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+    }
+
+    getMetronomeStatus() {
+        return {
+            isPlaying: this.isMetronomePlaying,
+            bpm: this.bpm
+        };
     }
 
     setSoundType(type) {
