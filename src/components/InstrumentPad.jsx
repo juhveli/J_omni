@@ -53,6 +53,8 @@ const DRUMS = [
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
 
+  // TODO: Add multi-touch support for playing chords
+
   let notes;
   if (currentInstrument === 'drums') {
     notes = DRUMS;
