@@ -747,3 +747,22 @@ header h1 {
     grid-template-columns: 1fr;
   }
 }
+/* Metronome Styles */
+.metronome-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bpm-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.bpm-control input[type=range] {
+    margin-bottom: 0.2rem;
+}
