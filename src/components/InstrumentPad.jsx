@@ -1,3 +1,4 @@
+// TODO: Add support for MIDI velocity sensitivity
 import React, { useEffect, useState } from 'react';
 import NoteButton from './NoteButton';
 import AudioEngine from '../utils/AudioEngine';
