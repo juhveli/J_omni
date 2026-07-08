@@ -52,6 +52,7 @@ const DRUMS = [
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
+  // TODO: Add support for MIDI velocity sensitivity to adjust note volume based on how hard the key is pressed.
 
   let notes;
   if (currentInstrument === 'drums') {

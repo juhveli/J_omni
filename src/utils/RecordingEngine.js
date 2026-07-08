@@ -75,6 +75,14 @@ class RecordingEngine {
                         console.warn('Could not load persisted audio buffer:', err);
                     }
 
+                    let panner = null;
+                    let player = null;
+
+                    if (buffer) {
+                        panner = new Tone.Panner(storedLayer.pan || 0).toDestination();
+                        player = new Tone.Player(buffer).connect(panner);
+                    }
+
                     const layer = {
                         id: storedLayer.id,
                         name: storedLayer.name,
@@ -85,7 +93,9 @@ class RecordingEngine {
                         duration: storedLayer.duration,
                         muted: storedLayer.muted,
                         volume: storedLayer.volume,
-                        player: buffer ? new Tone.Player(buffer).toDestination() : null,
+                        pan: storedLayer.pan || 0,
+                        player,
+                        panner,
                         createdAt: storedLayer.createdAt
                     };
 
@@ -220,6 +230,14 @@ class RecordingEngine {
             console.warn('Could not load audio buffer:', err);
         }
 
+        let panner = null;
+        let player = null;
+
+        if (buffer) {
+            panner = new Tone.Panner(0).toDestination();
+            player = new Tone.Player(buffer).connect(panner);
+        }
+
         const layer = {
             id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             name: `${source === 'instruments' ? '🎹' : source === 'microphone' ? '🎤' : '📁'} Layer ${this.layers.length + 1}`,
@@ -230,7 +248,9 @@ class RecordingEngine {
             duration: duration || (buffer?.duration * 1000) || 0,
             muted: false,
             volume: 1.0,
-            player: buffer ? new Tone.Player(buffer).toDestination() : null,
+            pan: 0,
+            player,
+            panner,
             createdAt: Date.now()
         };
 
@@ -313,6 +333,27 @@ class RecordingEngine {
     }
 
     /**
+     * Set layer pan
+     * @param {string} layerId
+     * @param {number} pan - -1 (left) to 1 (right)
+     */
+    setLayerPan(layerId, pan) {
+        const layer = this.layers.find(l => l.id === layerId);
+        if (layer) {
+            layer.pan = Math.max(-1, Math.min(1, pan));
+            if (layer.panner) {
+                layer.panner.pan.value = layer.pan;
+            }
+
+            // Update persistence
+            LayerStorage.updateLayer(layerId, { pan: layer.pan }).catch(console.warn);
+
+            return layer.pan;
+        }
+        return null;
+    }
+
+    /**
      * Play a specific layer
      * @param {string} layerId 
      */
@@ -389,8 +430,21 @@ class RecordingEngine {
             const gainNode = offlineCtx.createGain();
             gainNode.gain.value = layer.volume;
 
+            // Apply panning via StereoPannerNode
+            let finalNode = gainNode;
+
+            if (layer.pan !== undefined && layer.pan !== 0) {
+                // StereoPannerNode is supported in most modern browsers
+                if (offlineCtx.createStereoPanner) {
+                    const pannerNode = offlineCtx.createStereoPanner();
+                    pannerNode.pan.value = layer.pan;
+                    gainNode.connect(pannerNode);
+                    finalNode = pannerNode;
+                }
+            }
+
             source.connect(gainNode);
-            gainNode.connect(offlineCtx.destination);
+            finalNode.connect(offlineCtx.destination);
             source.start(0);
         });
 
