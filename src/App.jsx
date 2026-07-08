@@ -37,6 +37,7 @@ function App() {
 
   const activeInstrumentObj = INSTRUMENTS.find(i => i.id === currentInstrument) || INSTRUMENTS[0];
 
+  // TODO: Implement user authentication for cloud saves and cross-device syncing of layers and settings.
   return (
     <div className="app-container">
       {!isAudioStarted ? (

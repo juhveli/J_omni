@@ -17,17 +17,19 @@ const LayerManager = ({ isAudioStarted }) => {
                 source: l.source,
                 duration: l.duration,
                 muted: l.muted,
-                volume: l.volume
+                volume: l.volume,
+                pan: l.pan || 0
             })));
 
-            RecordingEngine.onLayerAdded = (_layer) => {
+            RecordingEngine.onLayerAdded = () => {
                 setLayers(RecordingEngine.layers.map(l => ({
                     id: l.id,
                     name: l.name,
                     source: l.source,
                     duration: l.duration,
                     muted: l.muted,
-                    volume: l.volume
+                    volume: l.volume,
+                    pan: l.pan || 0
                 })));
             };
         }
@@ -40,7 +42,8 @@ const LayerManager = ({ isAudioStarted }) => {
             source: l.source,
             duration: l.duration,
             muted: l.muted,
-            volume: l.volume
+            volume: l.volume,
+            pan: l.pan || 0
         })));
     };
 
@@ -82,6 +85,11 @@ const LayerManager = ({ isAudioStarted }) => {
 
     const handleVolumeChange = (layerId, volume) => {
         RecordingEngine.setLayerVolume(layerId, volume);
+        refreshLayers();
+    };
+
+    const handlePanChange = (layerId, pan) => {
+        RecordingEngine.setLayerPan(layerId, pan);
         refreshLayers();
     };
 
@@ -203,6 +211,22 @@ const LayerManager = ({ isAudioStarted }) => {
                                         title={`Volume: ${Math.round(layer.volume * 100)}%`}
                                     />
                                     <span className="volume-label">{Math.round(layer.volume * 100)}%</span>
+                                </div>
+
+                                <div className="layer-pan-section" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '5px' }}>
+                                    <span style={{ fontSize: '0.8rem' }}>L</span>
+                                    <input
+                                        type="range"
+                                        className="pan-slider"
+                                        min="-1"
+                                        max="1"
+                                        step="0.01"
+                                        value={layer.pan || 0}
+                                        onChange={(e) => handlePanChange(layer.id, parseFloat(e.target.value))}
+                                        title={`Pan: ${Math.round((layer.pan || 0) * 100)}%`}
+                                        style={{ flex: 1, width: '60px' }}
+                                    />
+                                    <span style={{ fontSize: '0.8rem' }}>R</span>
                                 </div>
 
                                 <div className="layer-controls">

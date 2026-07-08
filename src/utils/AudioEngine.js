@@ -3,8 +3,15 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+
+        // Metronome State
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBpm = 120;
 
         this.instruments = {
             // Samplers
@@ -31,6 +38,7 @@ class AudioEngine {
                 crash: null,
                 tom: null
             }
+            // TODO: Allow custom user sample imports for personalized drum kits or unique instruments.
         };
         this.currentInstrument = 'piano'; // 'piano' | 'guitar' | 'clarinet' | 'doubleBass' | 'drums' | 'oboe' | 'electricGuitar'
         this.soundType = 'sampled'; // 'sampled' | 'synthesized'
@@ -122,6 +130,22 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
+        }).toDestination();
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a sound on every quarter note
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.metronomeBpm;
+
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +153,62 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    // --- METRONOME CONTROLS ---
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback({ isPlaying: this.isMetronomePlaying, bpm: this.metronomeBpm });
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    getMetronomeStatus() {
+        return { isPlaying: this.isMetronomePlaying, bpm: this.metronomeBpm };
+    }
+
+    _notifyMetronomeListeners() {
+        const status = this.getMetronomeStatus();
+        this.metronomeListeners.forEach(cb => cb(status));
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        if (this.isMetronomePlaying) {
+            this.metronomeLoop.stop();
+            Tone.getTransport().stop();
+        } else {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+        }
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        this._notifyMetronomeListeners();
+    }
+
+    setMetronomeBpm(bpm) {
+        if (!this.initialized) return;
+
+        const newBpm = Math.max(40, Math.min(240, bpm)); // Limit 40 to 240
+        this.metronomeBpm = newBpm;
+        Tone.getTransport().bpm.value = this.metronomeBpm;
+        this._notifyMetronomeListeners();
+    }
+
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 

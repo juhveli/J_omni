@@ -69,6 +69,7 @@ class LayerStorage {
                 duration: layer.duration,
                 muted: layer.muted,
                 volume: layer.volume,
+                pan: layer.pan,
                 blob: layer.blob,
                 createdAt: layer.createdAt
             };
