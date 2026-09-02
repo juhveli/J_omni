@@ -191,7 +191,7 @@ class ComfyUIClient {
 
         // Simulate generation progress
         for (let i = 0; i <= 100; i += 10) {
-            await this._simulateDelay(300);
+            await this._simulateDelay(100);
             this.onProgress?.({
                 percent: i,
                 stage: i < 30 ? 'Encoding...' : i < 70 ? 'Generating...' : 'Finalizing...'
@@ -204,15 +204,22 @@ class ComfyUIClient {
         const buffer = audioContext.createBuffer(2, bufferLength, audioContext.sampleRate);
 
         // Generate a simple sine wave pattern
-        for (let channel = 0; channel < 2; channel++) {
-            const data = buffer.getChannelData(channel);
-            const freq = 220 * (channel + 1); // A3 and A4
-            for (let i = 0; i < bufferLength; i++) {
-                const t = i / audioContext.sampleRate;
-                // Add envelope
-                const envelope = Math.min(1, t * 4) * Math.min(1, (duration - t) * 2);
-                data[i] = Math.sin(2 * Math.PI * freq * t) * 0.3 * envelope;
-            }
+        const data0 = buffer.getChannelData(0);
+        const data1 = buffer.getChannelData(1);
+        const freq0 = 220; // A3
+        const freq1 = 440; // A4
+        const invSampleRate = 1 / audioContext.sampleRate;
+        const phaseStep0 = 2 * Math.PI * freq0 * invSampleRate;
+        const phaseStep1 = 2 * Math.PI * freq1 * invSampleRate;
+
+        for (let i = 0; i < bufferLength; i++) {
+            const t = i * invSampleRate;
+            // Add envelope
+            const envelope = Math.min(1, t * 4) * Math.min(1, (duration - t) * 2);
+            const amplitude = 0.3 * envelope;
+
+            data0[i] = Math.sin(phaseStep0 * i) * amplitude;
+            data1[i] = Math.sin(phaseStep1 * i) * amplitude;
         }
 
         // Convert to WAV blob
