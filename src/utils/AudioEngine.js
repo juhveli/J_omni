@@ -5,6 +5,12 @@ class AudioEngine {
         this.isLoading = false;
         this.listeners = [];
         this.noteListeners = [];
+        this.metronomeListeners = new Set();
+
+        this.metronomeState = {
+            isPlaying: false,
+            bpm: 120
+        };
 
         this.instruments = {
             // Samplers
@@ -122,11 +128,68 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.01 }
+        }).toDestination();
+        this.metronomeSynth.volume.value = -10;
+
+        this.metronomeLoop = new Tone.Loop((time) => {
+            // Play a tick
+            this.metronomeSynth.triggerAttackRelease("C4", "32n", time);
+        }, "4n");
+
+        Tone.Transport.bpm.value = this.metronomeState.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
 
         this.initialized = true;
+    }
+
+    // --- METRONOME API ---
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        this.metronomeState.isPlaying = !this.metronomeState.isPlaying;
+
+        if (this.metronomeState.isPlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // We do not stop Tone.Transport entirely because other things (like Tone.Loop, Tone.Sequence) might rely on it, but for simple app it might be fine.
+        }
+
+        this._notifyMetronomeListeners();
+    }
+
+    setMetronomeBpm(bpm) {
+        this.metronomeState.bpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+        this._notifyMetronomeListeners();
+    }
+
+    getMetronomeStatus() {
+        return { ...this.metronomeState };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback(this.getMetronomeStatus());
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        const status = this.getMetronomeStatus();
+        this.metronomeListeners.forEach(cb => cb(status));
     }
 
     subscribe(callback) {

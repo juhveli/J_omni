@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Real-time Jamming**: Implement collaborative real-time jamming via WebRTC.
+9.  **[Feature] Pro Controls**: Add pitch bend and modulation wheel controls for Pro Mode.
+10. **[Feature] Step Sequencer**: Implement a step sequencer interface for the drum machine.
