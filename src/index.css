@@ -259,6 +259,34 @@ header h1 {
   gap: 1rem;
 }
 
+.metronome-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--secondary-color);
+  padding: 10px;
+  border-radius: 20px;
+  align-items: center;
+}
+
+.bpm-slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.bpm-label {
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  color: var(--dark-text);
+  font-weight: bold;
+}
+
+.bpm-slider {
+  width: 100%;
+}
+
 .control-btn {
   background: transparent;
   border: 2px solid var(--primary-color);
