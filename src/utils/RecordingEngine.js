@@ -2,6 +2,8 @@ import * as Tone from 'tone';
 import lamejs from 'lamejs';
 import LayerStorage from './LayerStorage';
 
+// TODO: [Feature] Add audio trimming and editing capabilities for recorded layers.
+
 /**
  * RecordingEngine - Multi-layer recording system
  * 

@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: [Enhancement] Implement Custom theming (e.g., Light Mode, High Contrast Mode).
+
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+
+  const [metronomeState, setMetronomeState] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeToMetronome(setMetronomeState);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -78,6 +87,32 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+      </div>
+
+      <div className="settings-row">
+        <div className="control-group metronome-group">
+          <h3>Metronome</h3>
+          <div className="toggle-group">
+            <button
+              className={`control-btn ${metronomeState.isPlaying ? 'active' : ''}`}
+              onClick={() => AudioEngine.toggleMetronome()}
+            >
+              ⏱️ {metronomeState.isPlaying ? 'On' : 'Off'}
+            </button>
+            <div className="bpm-slider-container">
+              <input
+                type="range"
+                min="60"
+                max="240"
+                value={metronomeState.bpm}
+                onChange={(e) => AudioEngine.setMetronomeBpm(Number(e.target.value))}
+                className="bpm-slider"
+                title={`BPM: ${metronomeState.bpm}`}
+              />
+              <span className="bpm-label">{metronomeState.bpm} BPM</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

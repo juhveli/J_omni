@@ -6,6 +6,13 @@ class AudioEngine {
         this.listeners = [];
         this.noteListeners = [];
 
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.metronomeBpm = 120;
+        this.isMetronomePlaying = false;
+        this.metronomeListeners = new Set();
+
+        // TODO: [Feature] Allow custom user sample imports for instruments/drums.
         this.instruments = {
             // Samplers
             pianoSampler: null,
@@ -122,6 +129,13 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop(time => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.metronomeBpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -142,6 +156,41 @@ class AudioEngine {
         return () => {
             this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
         };
+    }
+
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        this.metronomeListeners.forEach(cb => cb(this.getMetronomeStatus()));
+    }
+
+    getMetronomeStatus() {
+        return { isPlaying: this.isMetronomePlaying, bpm: this.metronomeBpm };
+    }
+
+    setMetronomeBpm(bpm) {
+        this.metronomeBpm = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+        this._notifyMetronomeListeners();
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+        }
+        this._notifyMetronomeListeners();
     }
 
     _emitNoteEvent(note, time) {
