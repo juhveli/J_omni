@@ -51,6 +51,7 @@ const DRUMS = [
 ];
 
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
+  // TODO: Add MIDI velocity sensitivity and custom key mappings.
   const [activeNotes, setActiveNotes] = useState(new Set());
 
   let notes;
