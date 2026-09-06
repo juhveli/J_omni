@@ -11,6 +11,8 @@ import LayerStorage from './LayerStorage';
  * - Managing multiple layers
  * - Mixing and exporting
  */
+// TODO: Implement audio trimming and editing capabilities for recorded layers
+
 class RecordingEngine {
     constructor() {
         this.layers = [];
