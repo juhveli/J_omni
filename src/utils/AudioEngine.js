@@ -3,8 +3,13 @@ import * as Tone from 'tone';
 class AudioEngine {
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
+        this.isMetronomePlaying = false;
+        this.metronomeBPM = 120;
 
         this.instruments = {
             // Samplers
@@ -122,6 +127,13 @@ class AudioEngine {
         }).toDestination();
 
 
+        // Metronome Synth
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.Transport.bpm.value = this.metronomeBPM;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +141,57 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    toggleMetronome() {
+        if (!this.initialized) return false;
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            Tone.Transport.start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            Tone.Transport.stop();
+        }
+        this._notifyMetronomeListeners();
+        return this.isMetronomePlaying;
+    }
+
+    setBPM(bpm) {
+        this.metronomeBPM = bpm;
+        if (this.initialized) {
+            Tone.Transport.bpm.value = bpm;
+        }
+        this._notifyMetronomeListeners();
+    }
+
+    getMetronomeStatus() {
+        return { isPlaying: this.isMetronomePlaying, bpm: this.metronomeBPM };
+    }
+
+    subscribeMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback(this.getMetronomeStatus());
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        const status = this.getMetronomeStatus();
+        this.metronomeListeners.forEach(cb => cb(status));
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 

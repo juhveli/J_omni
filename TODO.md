@@ -7,3 +7,6 @@
 5.  **[Feature] Web MIDI API**: Add MIDI keyboard support allowing external hardware MIDI controllers to play notes in the application.
 6.  **[Enhancement] Metronome**: Implement a visual and audio metronome with adjustable BPM to help users practice their timing.
 7.  **[Feature] Lesson Mode**: Create a mode that highlights keys in sequence to teach users how to play simple popular songs.
+8.  **[Feature] Piano Roll Interface**: A visual sequencer interface for building melodies step-by-step.
+9.  **[Feature] Cloud Saves**: Implement user authentication and storage for saving layers and settings to the cloud.
+10. **[Feature] Collaborative Real-time Jamming**: Allow multiple users to connect via WebRTC and play instruments together.

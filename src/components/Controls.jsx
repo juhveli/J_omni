@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
+// TODO: [Feature] Collaborative Real-time Jamming: Allow multiple users to connect via WebRTC and play instruments together.
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    const unsubscribe = AudioEngine.subscribeMetronome(setMetronomeStatus);
+    return unsubscribe;
+  }, []);
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
@@ -78,6 +85,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 </button>
             </div>
          </div>
+
+        <div className="control-group metronome-group">
+          <h3>Metronome</h3>
+          <div className="toggle-group">
+            <button
+              className={`control-btn ${metronomeStatus.isPlaying ? 'active' : ''}`}
+              onClick={() => AudioEngine.toggleMetronome()}
+            >
+              ⏱️ {metronomeStatus.isPlaying ? 'Stop' : 'Start'}
+            </button>
+            <div className="bpm-control">
+              <input
+                type="range"
+                min="60"
+                max="240"
+                value={metronomeStatus.bpm}
+                onChange={(e) => AudioEngine.setBPM(parseInt(e.target.value, 10))}
+              />
+              <span className="bpm-label">{metronomeStatus.bpm} BPM</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
