@@ -41,6 +41,7 @@ const SCALES = {
     { note: 'C5', color: COLORS.C, label: 'C' }
   ]
 };
+// TODO: [Feature] Piano Roll Interface: A visual sequencer interface for building melodies step-by-step.
 
 const DRUMS = [
   { note: 'C2', color: COLORS.C, label: '🥁' }, // Kick

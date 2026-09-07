@@ -7,6 +7,7 @@ import ComfyUIPanel from './components/ComfyUIPanel'
 import AudioEngine from './utils/AudioEngine'
 import { INSTRUMENTS } from './constants'
 
+// TODO: [Feature] Cloud Saves: Implement user authentication and storage for saving layers and settings to the cloud.
 function App() {
   const [currentInstrument, setCurrentInstrument] = useState('piano')
   const [currentScale, setCurrentScale] = useState('simple')
