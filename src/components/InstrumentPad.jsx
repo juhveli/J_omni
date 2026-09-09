@@ -50,8 +50,14 @@ const DRUMS = [
   { note: 'G2', color: COLORS.G, label: '🥢' }  // Tom/Sticks
 ];
 
+const SIMPLE_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const FULL_KEY_MAP = {
+  'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
+};
+
 const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
+  const [midiAccess, setMidiAccess] = useState(null);
 
   let notes;
   if (currentInstrument === 'drums') {
@@ -67,6 +73,69 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
   const handleStop = (note) => {
     AudioEngine.stopNote(note);
   };
+
+  useEffect(() => {
+    const onMIDISuccess = (access) => {
+      setMidiAccess(access);
+    };
+
+    const onMIDIFailure = () => {
+      console.warn('Could not access your MIDI devices.');
+    };
+
+    if (navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+    }
+  }, []);
+
+  const midiToNoteString = (midiNote) => {
+    const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(midiNote / 12) - 1;
+    const noteIndex = midiNote % 12;
+    return noteStrings[noteIndex] + octave;
+  };
+
+  useEffect(() => {
+    if (!midiAccess) return;
+
+    const handleMIDIMessage = (message) => {
+      // TODO: Map MIDI velocity to output volume
+      // TODO: Add pitch bend support for MIDI controllers
+      // TODO: Update MIDI command parsing to mask the channel bits using (command & 0xf0) for multi-channel support
+      const command = message.data[0];
+      const midiNote = message.data[1];
+      const velocity = message.data[2];
+
+      const noteStr = midiToNoteString(midiNote);
+      // We only care if the note is in our current scale (or drum kit)
+      const isNoteInScale = notes.some(n => n.note === noteStr);
+
+      if (!isNoteInScale) return;
+
+      // MIDI commands: 144 is note on, 128 is note off. Sometimes note on with velocity 0 is used as note off.
+      if (command === 144 && velocity > 0) {
+        setActiveNotes(prev => new Set(prev).add(noteStr));
+        handleStart(noteStr);
+      } else if (command === 128 || (command === 144 && velocity === 0)) {
+        setActiveNotes(prev => {
+          const updated = new Set(prev);
+          updated.delete(noteStr);
+          return updated;
+        });
+        handleStop(noteStr);
+      }
+    };
+
+    for (let input of midiAccess.inputs.values()) {
+      input.onmidimessage = handleMIDIMessage;
+    }
+
+    return () => {
+      for (let input of midiAccess.inputs.values()) {
+        input.onmidimessage = null;
+      }
+    };
+  }, [midiAccess, notes]);
 
   useEffect(() => {
     // Subscribe to AudioEngine note events (visual feedback for Magic Melody)
@@ -86,19 +155,16 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
       if (e.repeat) return;
 
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
@@ -109,17 +175,14 @@ const InstrumentPad = ({ currentScale, currentInstrument }) => {
     };
 
     const handleKeyUp = (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
       const key = e.key.toLowerCase();
       let index = -1;
 
       if (currentInstrument === 'drums' || currentScale === 'simple') {
-        const keys = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-        index = keys.indexOf(key);
+        index = SIMPLE_KEYS.indexOf(key);
       } else if (currentScale === 'full') {
-        const keyMap = {
-          'a': 0, 'w': 1, 's': 2, 'e': 3, 'd': 4, 'f': 5, 't': 6, 'g': 7, 'y': 8, 'h': 9, 'u': 10, 'j': 11, 'k': 12
-        };
-        index = keyMap[key] !== undefined ? keyMap[key] : -1;
+        index = FULL_KEY_MAP[key] !== undefined ? FULL_KEY_MAP[key] : -1;
       }
 
       if (index >= 0 && index < notes.length) {
