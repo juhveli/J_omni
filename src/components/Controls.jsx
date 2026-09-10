@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioEngine from '../utils/AudioEngine';
 import { INSTRUMENTS, MAGIC_MELODY } from '../constants';
 
 const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, soundType, setSoundType }) => {
+  const [metronomeStatus, setMetronomeStatus] = useState(AudioEngine.getMetronomeStatus());
+
+  useEffect(() => {
+    // Only used to trigger re-renders if we add metronome tick visualizer later
+    const unsubscribe = AudioEngine.subscribeToMetronome(() => {
+      // visual tick
+    });
+    return unsubscribe;
+  }, []);
+
+  const toggleMetronome = () => {
+    const isPlaying = AudioEngine.toggleMetronome();
+    setMetronomeStatus(prev => ({ ...prev, playing: isPlaying }));
+  };
+
+  const handleBpmChange = (e) => {
+    const newBpm = parseInt(e.target.value, 10);
+    AudioEngine.setMetronomeBPM(newBpm);
+    setMetronomeStatus(prev => ({ ...prev, bpm: newBpm }));
+  };
 
   const handleMagicClick = () => {
     AudioEngine.playMelody(MAGIC_MELODY);
   };
 
+  // TODO: Add support for custom theming
   return (
     <div className="controls-container">
       <div className="control-group full-width">
@@ -76,6 +97,28 @@ const Controls = ({ currentInstrument, setInstrument, currentScale, setScale, so
                 <button className="control-btn" onClick={handleMagicClick}>
                     🪄 Magic Melody
                 </button>
+            </div>
+         </div>
+
+         <div className="control-group">
+            <h3>Metronome</h3>
+            <div className="toggle-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  className={`control-btn ${metronomeStatus.playing ? 'active' : ''}`}
+                  onClick={toggleMetronome}
+                >
+                    {metronomeStatus.playing ? '⏹️ Stop' : '⏱️ Start'}
+                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <input
+                      type="range"
+                      min="60"
+                      max="240"
+                      value={metronomeStatus.bpm}
+                      onChange={handleBpmChange}
+                    />
+                    <span style={{ color: 'white', fontSize: '0.8rem' }}>{metronomeStatus.bpm} BPM</span>
+                </div>
             </div>
          </div>
       </div>
