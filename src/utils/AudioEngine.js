@@ -1,10 +1,16 @@
 import * as Tone from 'tone';
 
 class AudioEngine {
+    // TODO: Implement custom SoundFonts for users
     constructor() {
         this.isLoading = false;
-        this.listeners = [];
-        this.noteListeners = [];
+        this.listeners = new Set();
+        this.noteListeners = new Set();
+        this.metronomeListeners = new Set();
+        this.isMetronomePlaying = false;
+        this.bpm = 120;
+        this.metronomeSynth = null;
+        this.metronomeLoop = null;
 
         this.instruments = {
             // Samplers
@@ -122,6 +128,13 @@ class AudioEngine {
         }).toDestination();
 
 
+        // --- METRONOME ---
+        this.metronomeSynth = new Tone.MembraneSynth().toDestination();
+        this.metronomeLoop = new Tone.Loop((time) => {
+            this.metronomeSynth.triggerAttackRelease("C2", "8n", time);
+        }, "4n");
+        Tone.getTransport().bpm.value = this.bpm;
+
         // --- SAMPLERS ---
         // Lazy load the default instrument
         this._loadPianoSampler();
@@ -129,18 +142,55 @@ class AudioEngine {
         this.initialized = true;
     }
 
+    subscribeToMetronome(callback) {
+        this.metronomeListeners.add(callback);
+        callback({ isMetronomePlaying: this.isMetronomePlaying, bpm: this.bpm });
+        return () => {
+            this.metronomeListeners.delete(callback);
+        };
+    }
+
+    _notifyMetronomeListeners() {
+        this.metronomeListeners.forEach(cb => cb({ isMetronomePlaying: this.isMetronomePlaying, bpm: this.bpm }));
+    }
+
+    toggleMetronome() {
+        if (!this.initialized) return;
+
+        this.isMetronomePlaying = !this.isMetronomePlaying;
+        if (this.isMetronomePlaying) {
+            Tone.getTransport().start();
+            this.metronomeLoop.start(0);
+        } else {
+            this.metronomeLoop.stop();
+            // Don't stop transport entirely if other things might use it, but for now it's okay
+        }
+        this._notifyMetronomeListeners();
+    }
+
+    setBPM(bpm) {
+        if (!this.initialized) return;
+        this.bpm = bpm;
+        Tone.getTransport().bpm.value = this.bpm;
+        this._notifyMetronomeListeners();
+    }
+
+    getMetronomeStatus() {
+        return { isMetronomePlaying: this.isMetronomePlaying, bpm: this.bpm };
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.listeners.add(callback);
         callback(this.isLoading);
         return () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
+            this.listeners.delete(callback);
         };
     }
 
     subscribeToNotes(callback) {
-        this.noteListeners.push(callback);
+        this.noteListeners.add(callback);
         return () => {
-            this.noteListeners = this.noteListeners.filter(cb => cb !== callback);
+            this.noteListeners.delete(callback);
         };
     }
 
